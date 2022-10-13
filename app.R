@@ -4,6 +4,7 @@
 # Main app
 # Updated for SC17 (July 2021)
 # Updated for SMD 2022 (Started March 2022)
+# Updated for MOC 2022 (October 2022)
 
 # Copyright 2020 OFP SPC MSE Team. Distributed under the GPL 3
 # Maintainer: Finlay Scott, OFP SPC
@@ -21,7 +22,6 @@
 
 #--------------------------------------------------------------
 
-# Move to data.table if any of the processes are taking too long?
 library(shiny)
 library(ggplot2)
 library(RColorBrewer)
@@ -33,127 +33,44 @@ source("funcs.R")
 source("plots.R")
 
 # Load the indicator data - including Kobe and Majuro data
-#data_files <- load("data/SMD2022_results_Z11.Rdata")
-#data_files <- load("data/SMD2022_results_Z12.Rdata") # Unfinished Z12
-#data_files <- load("data/SMD2022_results_Z12_skinny.Rdata") # Unfinished Z12, dropped some HCR 2s
-data_files <- load("data/SMD2022_results.Rdata") # Unfinished Z12, dropped some HCR 2s
-
-# Drop out one of the HCRs
-#unique(periodqs$hcrname)
-#drophcr <- "HCR 2 (+- 10% limit, 5% min. change)" 
-#periodqs <- periodqs[hcrname != drophcr]
+data_files <- load("data/Robustness_2022_results.Rdata")
 
 # Mixed fishery data
 # Needs to be redone
-mix_data_files <- load("data/mf_indicator_data.Rdata")
-
+#mix_data_files <- load("data/mf_indicator_data.Rdata")
 # Chop off impact data
 #mixpiqs <- mixpiqs[pi != "impact"]
 #mixpi_periodqs <- mixpi_periodqs[pi != "impact"]
 
-# Fix relative SBSBF0 piname
-periodqs[pi=="relTRP", piname := .("SB/SBF=0 relative to 2012")]
-yearqs[pi=="relTRP", piname := .("SB/SBF=0 relative to 2012")]
 
 #------------------------------------------------------------------------------------------------------
 
-# Additional data processing
+# Additional fixes
 
-# Bring in SKJ HCR names
+# Need to add "SKJ" to SKJ HCR names to differentiate from BET MP
 skj_hcr_names <- unique(periodqs[,c("msectrl", "hcrname", "hcrref")])
-# Need to add "SKJ" to them to differentiate from BET MP
 newnames <- paste("SKJ", skj_hcr_names$hcrref)
 newlevels <- paste("SKJ", levels(skj_hcr_names$hcrref))
 skj_hcr_names[, skjhcrref := .(factor(newnames, levels=newlevels))]
 setnames(skj_hcr_names, old="msectrl", new="Z")
 
-mixpi_periodqs <- merge(mixpi_periodqs, skj_hcr_names, by="Z")
-mixpiqs <- merge(mixpiqs, skj_hcr_names, by="Z")
+#mixpi_periodqs <- merge(mixpi_periodqs, skj_hcr_names, by="Z")
+#mixpiqs <- merge(mixpiqs, skj_hcr_names, by="Z")
 
 # Not showing impact plots yet
 # Impact scenario names
-impact_names <- data.frame(impact_scenario_name = c("BET MP", "SKJ MP", "SPA MP"),
-                           impact_scenario = c("BET_MP", "SKJ_MP", "SPA_MP"))
-mixpi_periodqs <- merge(mixpi_periodqs, impact_names, all=TRUE, by="impact_scenario")
-mixpiqs <- merge(mixpiqs, impact_names, all=TRUE, by="impact_scenario")
+#impact_names <- data.frame(impact_scenario_name = c("BET MP", "SKJ MP", "SPA MP"),
+#                           impact_scenario = c("BET_MP", "SKJ_MP", "SPA_MP"))
+#mixpi_periodqs <- merge(mixpi_periodqs, impact_names, all=TRUE, by="impact_scenario")
+#mixpiqs <- merge(mixpiqs, impact_names, all=TRUE, by="impact_scenario")
 
 # Order by skjhcrref
-mixpi_periodqs <- mixpi_periodqs[order(mixpi_periodqs$skjhcrref),]
-mixpiqs <- mixpiqs[order(mixpiqs$skjhcrref),]
+#mixpi_periodqs <- mixpi_periodqs[order(mixpi_periodqs$skjhcrref),]
+#mixpiqs <- mixpiqs[order(mixpiqs$skjhcrref),]
 
-## Processing HCR scaler output
-## Quantiles for plotting etc - note long whiskers
-#quantiles <- c(0.025, 0.25, 0.50, 0.75, 0.975)
-## Stupid quantile naming for later
-#qnames <- paste("X",quantiles*100,".",sep="")
-## Useful quantile function for more useful names
-#myquantile <- function(data, probs, na.rm=TRUE, qnames){
-#  out <- quantile(data, probs=probs, na.rm=TRUE, names=FALSE)
-#  names(out) <- qnames
-#  return(out)
-#}
-
-# Moved to PI calculation
-## Careful - diff has to be by MSE ctrl etc
-#setorder(hcr_points,year)
-#scaler_diff <- hcr_points[, .(year = c(NA, year[-1]), scaler_diff = c(NA, abs(diff(scaler)))), by=.(iter, msectrl, hcrref, hcrname)]
-####scaler_diff[hcrref=="HCR 4" & iter ==89]
-####hcr_points[hcrref=="HCR 4" & iter ==89]
-#hcr_points <- merge(hcr_points, scaler_diff, all.x = TRUE)
-#
-#pdat <- hcr_points[hcrref %in% c("HCR 2", "HCR 2 (+- 10%)") & iter==1]
-
-
-##scaler <- hcr_points[,as.list(myquantile(scaler, probs=quantiles, na.rm=TRUE, qnames=qnames)), by=.(msectrl, year, period, hcrref, hcrname)]
-### Need to pad out first year? Add 0s?
-##scaler_diff <- hcr_points[,as.list(myquantile(scaler_diff, probs=quantiles, na.rm=TRUE, qnames=qnames)),by=.(msectrl, year, period, hcrref, hcrname)]
-#
-## Add 0s in the first period to avoid warning of NAs?
-##scaler_diff[year==2021, c("X2.5.", "X25.", "X50.", "X75.", "X97.5.") := .(0)]
-#
-## Does this make sense?
-#pdat <- hcr_points[hcrref %in% c("HCR 2", "HCR 2 (+- 10%)") & year == 2036]
-#p <- ggplot(pdat, aes(x=scaler))
-#p <- p + geom_histogram()
-#p <- p + facet_wrap(~hcrref, ncol=1)
-#p
-# Point is without constraint - long tails, values between 0.8 to 1.0
-# With constraint, long tails are squashed in, so all values between 0.9 and 1.0
-
-# But this is not scaler_diff - this is scaler
-
-
-  #------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------
 
 # Additional data processing
-
-# Data for the HCR histogram plots
-breaks <- seq(from=0,to=2,by=0.05)
-freqs <- cut(hcr_points$scaler, breaks, labels=FALSE)
-hcr_points$bin <- breaks[freqs]
-
-# Different number of obs for each HCR - some iters failed and the simulations stop
-# This is from the results table
-#hcr_points[, .N, by=.(msectrl)]
-#hcr_points[msectrl == "Z3", .N, by=.(year)]
-
-histodat <- hcr_points[, .(sum = .N), by=.(hcrref, hcrname, period, bin)]
-nobs <- hcr_points[, .(nobs = .N), by=.(hcrref, hcrname, period)]
-histodat[nobs, on=c("hcrref", "hcrname", "period"), nobs:=i.nobs]
-histodat[, prop := sum / nobs]
-# Correct the bin so that we use the right hand side of the bin from cut() - means effort of 1 shows an effort of 1
-histodat[, bin := bin+0.05]
-
-#histodat <- dplyr::group_by(hcr_points, hcrref, hcrname, period, bin)
-#histodat <- dplyr::summarise(histodat, sum=dplyr::n())
-#nobs <- dplyr::group_by(hcr_points,hcrref, hcrname, period)
-#nobs <- dplyr::summarise(nobs, tnobs=dplyr::n())
-#biodf[time_periods, on='year', period:=i.period]
-
-#histodat <- dplyr::left_join(histodat, nobs)
-#histodat$prop <- histodat$sum / histodat$tnobs
-# Correct the bin so that we use the right hand side of the bin from cut() - means effort of 1 shows an effort of 1
-#histodat$bin <- histodat$bin + 0.05
 
 # General plotting parameters
 short_term <- worms[period == "Short", sort(unique(year))]
@@ -162,33 +79,29 @@ long_term <- worms[period == "Long", sort(unique(year))]
 
 last_plot_year <- max(long_term)
 first_plot_year <- 1990
-# Check these match what is in the data and what is in the SPC stock assessment reports
-inner_percentiles <- c(25,75) # Used in tables
+# Quantiles - need to match what is in the data objects (from the PI calc script)
+inner_percentiles <- c(25,75)
 outer_percentiles <- c(10,90)
-#and time series plots, to match other SPC plots. These need to be in the data
 
 # Trim out years for tight time series plots
 yearqs <- yearqs[year %in% first_plot_year:last_plot_year]
 worms <- worms[year %in% first_plot_year:last_plot_year]
 
 # For the worms - same worms for all plots
-nworms <- 3
+nworms <-  min(3,length(unique(worms$iter)))
 set.seed(95)
 wormiters <- sample(unique(worms$iter), nworms)
 
 # Careful with these - they are only used for plotting lines, NOT for calculating the indicators
 lrp <- 0.2
 trp1 <- 0.5
-#trp2 <- 0.425 # SB/SBF0 TRP from the 2019 assessment
-trp2 <- 0.4545289 
+trp2 <- unlist(yearqs[piname == "SB/SBF=0" & msectrl == "Z2" & area == "all" & year == 2012, "X50."]) # 0.4611075
 
 # Find common iters between HCRs - used for HCR plots so we can directly compare
-# All HCRs have 960 iters but some are incomplete - need to sample only from full ones
-#common_iters <- Reduce(intersect, split(hcr_points$iter, hcr_points$hcrname, drop=TRUE))
+# Some iters dropped due to errors
 common_iters <- hcr_points[, unique(iter)]
 
 # Sort everything by HCR - should already have been done in the PI preparation script
-setorder(histodat, hcrref)
 setorder(periodqs, hcrref)
 setorder(yearqs, hcrref)
 setorder(worms, hcrref)
@@ -197,24 +110,23 @@ setorder(hcr_shape, hcrref)
 majuro_summary_tabs <- lapply(majuro_summary_tabs, function(x) x[order(x$HCR),])
 kobe_summary_tabs <- lapply(kobe_summary_tabs, function(x) x[order(x$HCR),])
 
-
 # Fix names of PI selector - used for selecting desired PIs - need to remove PS note
 # piselector is the one used in the main comparison tab
 # i.e. not used in the more detailed analysis
 pis_list <- sort(unique(periodqs[,piname]))
 # Drop the variability ones (they point the wrong way and are alternatives to the stability indicators)
 pis_list <- pis_list[!grepl("variability", pis_list)]
-# Also drop SB, SBSBF0latest, the Proximity 0.5 one until we fix the TRP selector, only look at relative catches
-pis_list <- pis_list[!(pis_list %in% c("SB", "SB/SBF=0latest", "Vuln. biomass", "PI 8: Proximity to SB/SBF=0 (0.5)", "PI 3: Catch"))] 
+# Also drop SB, SBSBF0latest, the Proximity 0.5 one until we fix the TRP selector, only look at relative catches. Drop Relative CPUE for P&L, only want PS for now.
+pis_list <- pis_list[!(pis_list %in% c("SB", "SB/SBF=0latest", "Vuln. biomass", "PI 8: Proximity to SB/SBF=0 (0.5)", "PI 3: Catch", "PI 4: Relative P&L CPUE"))] 
 piselector <- as.list(pis_list)
 pis_text <- unlist(lapply(strsplit(pis_list,"\n"),'[',1))
 names(piselector) <- pis_text
 
 # Not showing mixed fishery catches yet
-betfisheryselector <- unique(mixpiqs$fishery_name)
-betfisheryselector <-  betfisheryselector[!is.na(betfisheryselector)]
-betfisheryselector <- as.list(betfisheryselector)
-names(betfisheryselector) <-  unlist(betfisheryselector)
+#betfisheryselector <- unique(mixpiqs$fishery_name)
+#betfisheryselector <-  betfisheryselector[!is.na(betfisheryselector)]
+#betfisheryselector <- as.list(betfisheryselector)
+#names(betfisheryselector) <-  unlist(betfisheryselector)
 
 # -------------------------------------------
 # General settings for app
@@ -317,9 +229,9 @@ ui <- fluidPage(id="top",
       ),
       
       # The BET MP and BET / YFT stock options
-      conditionalPanel(condition="input.nvp == 'mixpis'",
-        radioButtons(inputId = "betoryft", label="BET or YFT", selected = "BET", choiceNames = c("BET", "YFT"), choiceValues = c("BET", "YFT")),
-        checkboxGroupInput(inputId = "betmpchoice", label="TLL scenario", selected = unique(mixpi_periodqs$tll_mult), choiceNames = as.character(unique(mixpi_periodqs$tll_ass_name)), choiceValues = unique(mixpi_periodqs$tll_mult))),
+      #conditionalPanel(condition="input.nvp == 'mixpis'",
+      #  radioButtons(inputId = "betoryft", label="BET or YFT", selected = "BET", choiceNames = c("BET", "YFT"), choiceValues = c("BET", "YFT")),
+      #  checkboxGroupInput(inputId = "betmpchoice", label="TLL scenario", selected = unique(mixpi_periodqs$tll_mult), choiceNames = as.character(unique(mixpi_periodqs$tll_ass_name)), choiceValues = unique(mixpi_periodqs$tll_mult))),
         
       conditionalPanel(condition = "input.nvp == 'mixpis' && (input.mixpisid == 'mixss' || input.mixpisid == 'mixplrp' || input.mixpisid == 'mixcatch')",
         radioButtons(inputId = "facetskjorbet", label="Panels by SKJ HCR or BET MP", selected = "betmp", choiceNames = c("BET MP", "SKJ HCR"), choiceValues = c("betmp", "skjhcr"))),
@@ -516,43 +428,43 @@ ui <- fluidPage(id="top",
           )                                
         ), # End of Other SKJ indicators tab                                
         
-        #------------------------------------------
-        # Mixed fishery indicators 
-        #------------------------------------------
-        tabPanel(title="Mixed fishery indicators", value="mixpis",
-          tabsetPanel(id="mixpisid",
-            # Information on the mixed fishery indicators
-            tabPanel("Mixed fishery indicators information", value="mixinfo",
-              includeMarkdown("introtext/mix_introduction.md")
-            ), # End of mixed fishery information tab
-            
-            tabPanel("Stock status", value="mixss",
-              column(12, fluidRow(
-                h1(textOutput("print_ss_betoryft")), 
-                #plotOutput("plot_box_mixpis_sbsbf0", height="auto")
-                plotOutput("plot_mixpis_sbsbf0", height="auto")
-                #plotOutput("plot_mixpis_sbsbf0", height="auto")
-              ))
-            ), # End of mixed fishery stock status tabpanel
-            tabPanel("Prob. > LRP",value="mixplrp",
-              column(12, fluidRow(
-                h1(textOutput("print_problrp_betoryft")), 
-                plotOutput("plot_box_mixpis_problrp", height="auto")
-              ))
-            ) # End of prob > LRP mixed fishery panel
-            # Don't show catches and impact yet
-            #tabPanel("Catch",value="mixcatch",
-            #         column(12, fluidRow(
-            #           plotOutput("plot_box_mixpis_catch", height="auto") 
-            #         ))
-            #), # End of catch mixed fishery panel
-            #tabPanel("Impact",value="miximpact",
-            #         column(12, fluidRow(
-            #           plotOutput("plot_mixpis_impact", height="auto") 
-            #         ))
-            #), # End of impact panel
-          ) # End of mixed fishery indicators tabsetPanel
-        ), # End of mixed fishery indicators tab
+        ##------------------------------------------
+        ## Mixed fishery indicators 
+        ##------------------------------------------
+        #tabPanel(title="Mixed fishery indicators", value="mixpis",
+        #  tabsetPanel(id="mixpisid",
+        #    # Information on the mixed fishery indicators
+        #    tabPanel("Mixed fishery indicators information", value="mixinfo",
+        #      includeMarkdown("introtext/mix_introduction.md")
+        #    ), # End of mixed fishery information tab
+        #    
+        #    tabPanel("Stock status", value="mixss",
+        #      column(12, fluidRow(
+        #        h1(textOutput("print_ss_betoryft")), 
+        #        #plotOutput("plot_box_mixpis_sbsbf0", height="auto")
+        #        plotOutput("plot_mixpis_sbsbf0", height="auto")
+        #        #plotOutput("plot_mixpis_sbsbf0", height="auto")
+        #      ))
+        #    ), # End of mixed fishery stock status tabpanel
+        #    tabPanel("Prob. > LRP",value="mixplrp",
+        #      column(12, fluidRow(
+        #        h1(textOutput("print_problrp_betoryft")), 
+        #        plotOutput("plot_box_mixpis_problrp", height="auto")
+        #      ))
+        #    ) # End of prob > LRP mixed fishery panel
+        #    # Don't show catches and impact yet
+        #    #tabPanel("Catch",value="mixcatch",
+        #    #         column(12, fluidRow(
+        #    #           plotOutput("plot_box_mixpis_catch", height="auto") 
+        #    #         ))
+        #    #), # End of catch mixed fishery panel
+        #    #tabPanel("Impact",value="miximpact",
+        #    #         column(12, fluidRow(
+        #    #           plotOutput("plot_mixpis_impact", height="auto") 
+        #    #         ))
+        #    #), # End of impact panel
+        #  ) # End of mixed fishery indicators tabsetPanel
+        #), # End of mixed fishery indicators tab
         #------------------------------------------
         # The Management Procedures
         #------------------------------------------
@@ -565,10 +477,6 @@ ui <- fluidPage(id="top",
               plotOutput("plot_hcrshape",  height="600px"),
             )
           ),
-            #fluidRow(
-            #  p("The histograms below shows how often each HCR set a particular value for the catch or effort scalar in each time period."),
-            ## Uncomment the following line to show the histograms
-            #  plotOutput("plot_hcrhistograms",  height="600px"))
           fluidRow(
             p("The distribution of HCR output in each management period. The box and whiskers show the 50th and 95th percentiles respectively."),
             p("Note that the minimum y-limit is not fixed at 0."),
@@ -623,7 +531,7 @@ server <- function(input, output, session) {
   })
   #-------------------------------------------------------------------
   # Intro plots
-  demo_hcr_choices <- c("HCR 3", "HCR 4")
+  demo_hcr_choices <- c("HCR 1 (+-10%)", "HCR 6 (+-10%)")
   
   output$demobarchart <- renderPlot({
     # Demo bar plot
@@ -791,75 +699,6 @@ server <- function(input, output, session) {
     height=function(){return(max(height_per_pi * 1.5, height_per_pi * length(input$betyftfisherychoice)))}
   )
   
-  #output$plot_timeseries_mixpis_sbsbf0 <- renderPlot({
-  #  hcr_choices <- input$hcrchoice
-  #  betmp_choices <- input$betmpchoice
-  #  stock_choice <- input$betoryft
-  #  barbox_choice <- input$plotchoicebarbox # median_bar or box
-  #  facetskjorbet <- input$facetskjorbet
-  #  if((length(hcr_choices) < 1) | (length(betmp_choices) < 1)){
-  #    return()
-  #  }
-  #  #dat <- subset(mixpiqs, area == "All regions" & pi == "sbsbf0" & stock == "BET")
-  #  dat <- subset(mixpiqs, area == "All regions" & pi == "sbsbf0" & stock == stock_choice)
-  #  
-  #  # SKJ HCR and BET MP colours
-  #  all_hcr_names <- unique(dat$skjhcrref)
-  #  all_betmp_names <- unique(dat$tll_ass_name)
-  #  dat <- dat[dat$hcrref %in% hcr_choices & dat$tll_mult %in% betmp_choices,] 
-  #  hcr_cols <- get_hcr_colours(hcr_names=all_hcr_names, chosen_hcr_names=unique(dat$skjhcrref))
-  #  betmp_cols <- get_betmp_colours(mp_names=all_betmp_names, chosen_mp_names=unique(dat$tll_ass_name))
-  #
-  #  if (facetskjorbet == "skjhcr"){
-  #    fillvar = "tll_ass_name"
-  #  } else {
-  #    fillvar = "skjhcrref"
-  #  }
-  #  
-  #  inner_ynames <- paste0("X", inner_percentiles, ".")
-  #  outer_ynames <- paste0("X", outer_percentiles, ".")
-  #  # Chop out NA rows
-  #  dat <- dat[!is.na(dat$X50.),]
-  #  # Start the plot
-  #  p <- ggplot(dat, aes(x=year))
-  #  # The ribbon - colour by either SKJ or BET MP
-  #  p <- p + geom_ribbon(aes_string(ymin=outer_ynames[1], ymax=outer_ynames[2], fill=fillvar), alpha=0.5)
-  #  p <- p + geom_ribbon(aes_string(ymin=inner_ynames[1], ymax=inner_ynames[2], fill=fillvar))
-  #  # Add median line
-  #  p <- p + geom_line(aes_string(y="X50.", group=fillvar), colour="black", linetype=2, size=rel(0.5))
-  #  p <- p + xlab("Year")
-  #  # Add worms
-  #  #if (!is.null(wormdat) & show_spaghetti==TRUE){
-  #  #  wormdat <- subset(wormdat, hcrref %in% hcr_choices)
-  #  #  wormdat <- wormdat[!is.na(wormdat$value),]
-  #  #  # Put a black background on the line to help
-  #  #  p <- p + geom_line(data=wormdat, aes(x=year, y=value, group=wormid), colour="black", linetype=linetype_worm, size=size_worm*1.2)
-  #  #}
-  #  # Colours
-  #  if (fillvar == "skjhcrref"){
-  #    p <- p + scale_fill_manual(values=hcr_cols, name="SKJ HCR")
-  #    p <- p + facet_grid(tll_ass_name ~ skjhcrref, scales="free")
-  #  }
-  #  if (fillvar == "tll_ass_name"){
-  #    p <- p + scale_fill_manual(values=betmp_cols, name="TLL scenario")
-  #    p <- p + facet_grid(skjhcrref ~ tll_ass_name, scales="free")
-  #  }
-  #  # Add vertical line at start of MSE
-  #  p <- p + geom_vline(aes(xintercept=min(short_term)-3), linetype=2)
-  #  # Time period lines?
-  #  p <- p + geom_vline(aes(xintercept=min(short_term)), linetype=2)
-  #  p <- p + geom_vline(aes(xintercept=min(medium_term)), linetype=2)
-  #  p <- p + geom_vline(aes(xintercept=min(long_term)), linetype=2)
-  #
-  #  p <- p + theme_bw()
-  #  p <- p + theme(legend.position="bottom", legend.title=element_blank())
-  #  p <- p + ylim(c(0,1)) + ylab(paste(stock_choice, "SB/SBF=0", sep=" "))
-  #  # Add 0.2 line
-  #  p <- p + geom_hline(aes(yintercept=0.2), linetype=2)
-  #  return(p)
-  #})
-
-  
   output$plot_mixpis_sbsbf0 <- renderPlot({
     hcr_choices <- input$hcrchoice
     betmp_choices <- input$betmpchoice
@@ -971,43 +810,6 @@ server <- function(input, output, session) {
     }
   )
 
-  # SB/SBF=0
-  #output$plot_box_mixpis_sbsbf0 <- renderPlot({
-  #  hcr_choices <- input$hcrchoice
-  #  betmp_choices <- input$betmpchoice
-  #  stock_choice <- input$betoryft
-  #  barbox_choice <- input$plotchoicebarbox # median_bar or box
-  #  facetskjorbet <- input$facetskjorbet
-  #  if((length(hcr_choices) < 1) | (length(betmp_choices) < 1)){
-  #    return()
-  #  }
-  #  dat <- subset(mixpi_periodqs, period != "Rest" & area == "All regions" & pi == "sbsbf0" & stock == stock_choice)
-  #  
-  #  
-  #  # Call plot function here
-  #  p <- mixpis_barbox_biol_plot(dat = dat, hcr_choices = hcr_choices,
-  #                               betmp_choices = betmp_choices,
-  #                               barbox_choice = barbox_choice,
-  #                               stock_choice = stock_choice,
-  #                               facetskjorbet = facetskjorbet,
-  #                               no_mixfacets_row = no_mixfacets_row
-  #                               )
-  #  p <- p + ylim(c(0,1)) + ylab(paste(stock_choice, "SB/SBF=0", sep=" "))
-  #  # Add 0.2 line
-  #  p <- p + geom_hline(aes(yintercept=0.2), linetype=2)
-  #  return(p)
-  #}, 
-  #  height= function(){
-  #  otherbit <- height_per_pi
-  #  if(input$facetskjorbet == "skjhcr"){
-  #    otherbit <- height_per_pi * ceiling(length(input$hcrchoice) / no_mixfacets_row)
-  #  }
-  #  if(input$facetskjorbet == "betmp"){
-  #    otherbit <- height_per_pi * ceiling(length(input$betmpchoice) / no_mixfacets_row)
-  #  }
-  #  return(max(height_per_pi*1.5, otherbit))
-  #  }
-  #)
   
   output$plot_box_mixpis_problrp <- renderPlot({
       hcr_choices <- input$hcrchoice
@@ -1082,18 +884,12 @@ server <- function(input, output, session) {
       # pi8: area = all
       # sbsbsf0: area = 1-8, all
       catch_area_choice <- input$catchareachoice
+      # Need to be careful as PI 4 has five areas - PL 1- 4 and ps678x
       dat <- subset(periodqs, period != "Rest" & area %in% c("all", catch_area_choice, "ps678x") & piname %in% pi_choices & metric != "catch stability")
 
-      ## Need to hack pi1 so that all quantiles = X50., else NA
-      ## Probably better to do this at the top
-      #colnames(periodqs)[substr(colnames(periodqs),1,1)=="X"]
-      #if("pi1" %in% dat$pi){
-      #  dat[dat$pi=="pi1",c("X1.", "X5.", "X10.", "X15.", "X20.", "X80.", "X85.", "X90.","X95.","X99.")] <- dat[dat$pi=="pi1","X50."]
-      #}
-
       p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_type)
-      # Do we fix axis at 0?
-      #p <- p + ggplot2::ylim(0,NA)
+      # Do we fix axis at 0? Probably
+      p <- p + ggplot2::ylim(0,NA)
       # Coord cartesian to zoom
       #p <- p + coord_cartesian(ylim=c(0.5,NA)) # Fixes barcharts - all of them at 0.5
       # How to get different ones
@@ -1102,7 +898,7 @@ server <- function(input, output, session) {
       # Only if SB/SBF=0 is in dat
       if ("SB/SBF=0" %in% pi_choices){
         p <- p + ggplot2::geom_hline(data=data.frame(yint=lrp, piname="SB/SBF=0"), ggplot2::aes(yintercept=yint), linetype=2)
-        p <- p + ggplot2::geom_hline(data=data.frame(yint=trp2, piname="SB/SBF=0"), ggplot2::aes(yintercept=yint), linetype=2)
+        #p <- p + ggplot2::geom_hline(data=data.frame(yint=trp2, piname="SB/SBF=0"), ggplot2::aes(yintercept=yint), linetype=2)
       }
       # Add 1.0 line for relative to TRP plot
       if ("SB/SBF=0 relative to 2012" %in% pi_choices){
@@ -1149,9 +945,7 @@ server <- function(input, output, session) {
     # Facet by PI
     p <- p + facet_grid(piname ~ hcrref, scales="free")#, ncol=1)
     #p <- p + ylab("Catch")
-    #***********************************
-    #p <- p + ggplot2::ylim(c(0,NA))
-    #***********************************
+    p <- p + ggplot2::ylim(c(0,NA))
     # Axes limits set here or have tight?
     p <- p + ggplot2::scale_x_continuous(expand = c(0, 0))
     p <- p + ggplot2::ylab("Value")
@@ -1205,90 +999,6 @@ server <- function(input, output, session) {
 
   #-------------------------------------------------------------------
   # Individual PI plots
-
-  # Timeseries
-  # SBSBF0
-  #output$plot_ts_sbsbf0  <- renderPlot({
-  #  show_spaghetti <- input$showspag
-  #  hcr_choices <- input$hcrchoice
-  #  if(length(hcr_choices) < 1){
-  #    return()
-  #  }
-  #  # SBSBF0 - Just combined area
-  #  dat <- subset(yearqs, pi=="sbsbf0" & metric=="SBSBF0" & area=="all") 
-  #  # Add Option for worms
-  #  wormdat <- subset(worms, pi=="sbsbf0" & metric=="SBSBF0" & area=="all" & iter %in% wormiters) 
-  #  # Else wormdat <- NULL
-  #  p <- time_series_plot(dat=dat, hcr_choices=hcr_choices, wormdat=wormdat, last_plot_year=last_plot_year, short_term = short_term, medium_term = medium_term, long_term = long_term, show_spaghetti=show_spaghetti, percentile_range = pi_percentiles)
-  #  p <- p + ggplot2::geom_hline(ggplot2::aes(yintercept=lrp), linetype=3)
-  #  #p <- p + ggplot2::geom_hline(ggplot2::aes(yintercept=trp), linetype=3)
-  #  p <- p + ggplot2::geom_hline(ggplot2::aes(yintercept=trp2), linetype=3)
-  #  p <- p + ggplot2::ylab("SB/SBF=0")
-  #  p <- p + ggplot2::ylim(c(0,NA))
-  #  # Axes limits set here or have tight?
-  #  p <- p + ggplot2::scale_x_continuous(expand = c(0, 0))
-  #  # Size of labels etc
-  #  p <- p + theme(axis.text=element_text(size=16), axis.title=element_text(size=16), strip.text=element_text(size=16), legend.text=element_text(size=16))
-  #  return(p)
-  #})
-
-  # Bar and box plot 
-  # SBSBF0
-  #output$plot_barbox_sbsbf0 <- renderPlot({
-  #  plot_type <- input$plotchoicebarbox
-  #  hcr_choices <- input$hcrchoice
-  #  if(length(hcr_choices) < 1){
-  #    return()
-  #  }
-  #  dat <- subset(periodqs, period != "Rest" & pi=="sbsbf0" & metric=="SBSBF0" & area=="all") 
-  #  p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_type)
-  #  p <- p + ggplot2::ylab("SB/SBF=0") + ggplot2::ylim(c(0,1))
-  #  p <- p + ggplot2::geom_hline(ggplot2::aes(yintercept=lrp), linetype=2)
-  #  #p <- p + ggplot2::geom_hline(ggplot2::aes(yintercept=trp), linetype=2)
-  #  p <- p + ggplot2::geom_hline(ggplot2::aes(yintercept=trp2), linetype=2)
-  #  return(p)
-  #})
-
-  # Not used at moment
-  # Could add in option for TRP
-  #output$plot_barbox_pi8 <- renderPlot({
-  #  plot_type <- input$plotchoicebarbox
-  #  hcr_choices <- input$hcrchoice
-  #  if(length(hcr_choices) < 1){
-  #    return()
-  #  }
-  #  dat <- subset(periodqs, period != "Rest" & pi=="pi8" & metric=="trp_05" & area=="all") 
-  #  p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_type)
-  #  # Average closeness to TRP
-  #  p <- p + ggplot2::ylab("PI 8: Proximity to TRP") + ggplot2::ylim(c(0,1))
-  #  return(p)
-  #})
-  
-  #output$plot_barbox_pi82 <- renderPlot({
-  #  plot_type <- input$plotchoicebarbox
-  #  hcr_choices <- input$hcrchoice
-  #  if(length(hcr_choices) < 1){
-  #    return()
-  #  }
-  #  dat <- subset(periodqs, period != "Rest" & pi=="pi8" & metric=="trp_0425" & area=="all") 
-  #  p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_type)
-  #  # Average closeness to TRP
-  #  p <- p + ggplot2::ylab("PI 82: Proximity to SB/SBF=0 in 2012") + ggplot2::ylim(c(0,1))
-  #  return(p)
-  #})
-
-  # Bar plot 
-  # PI 1: Prob of SBSBF0 > LRP
-  #output$plot_bar_problrp <- renderPlot({
-  #  hcr_choices <- input$hcrchoice
-  #  if(length(hcr_choices) < 1){
-  #    return()
-  #  }
-  #  dat <- subset(periodqs, period != "Rest" & pi=="pi1" & area=="all") 
-  #  p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type="median_bar")
-  #  p <- p + ggplot2::ylab("PI 1: Prob. SB/SBF=0 > LRP") + ggplot2::ylim(c(0,1))
-  #  return(p)
-  #})
 
   # For exploring the catches in different regions
   output$plot_pi3 <- renderPlot({
@@ -1401,48 +1111,6 @@ server <- function(input, output, session) {
     return(max(height_per_area*1.5, (height_per_area * ceiling(length(input$areachoice) / no_facets_row))))
   })
 
-  # Timeseries
-  # PI: 4
-  #output$plot_ts_relcpue <- renderPlot({
-  #  show_spaghetti <- input$showspag
-  #  hcr_choices <- input$hcrchoice
-  #  if(length(hcr_choices) < 1){
-  #    return()
-  #  }
-  #  dat <- subset(yearqs, pi=="pi4") 
-  #  # Add Option for worms
-  #  wormdat <- subset(worms, pi=="pi4" & iter %in% wormiters) 
-  #  # Else wormdat <- NULL
-  #  # May need to subset over area in the future if we add additional groupings
-  #  p <- time_ser_plot(dat=dat, hcr_choices=hcr_choices, wormdat=wormdat, last_plot_year=last_plot_year, short_term = short_term, medium_term = medium_term, long_term = long_term, show_spaghetti=show_spaghetti, percentile_range = pi_percentiles)
-  #  p <- p + ggplot2::ylab("Relative CPUE")
-  #  p <- p + ggplot2::ylim(c(0,NA))
-  #  # Axes limits set here or have tight?
-  #  p <- p + ggplot2::scale_x_continuous(expand = c(0, 0))
-  #  # Size of labels etc
-  #  p <- p + theme(axis.text=element_text(size=16), axis.title=element_text(size=16), strip.text=element_text(size=16), legend.text=element_text(size=16))
-  #  return(p)
-  #})
-
-  # Bar and box plot 
-  # PI 4: Catch
-  #plot_barbox_relcpue<- function(plot_type="median_bar"){
-  #  rPlot <- renderPlot({
-  #    hcr_choices <- input$hcrchoice
-  #    if(length(hcr_choices) < 1){
-  #      return()
-  #    }
-  #    dat <- subset(periodqs, period != "Rest" & pi=="pi4") 
-  #    p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_type)
-  #    p <- p + ggplot2::ylab("PI 4: Relative CPUE") + ggplot2::ylim(c(0,NA))
-  #    return(p)
-  #  })
-  #  return(rPlot)
-  #}
-
-  #output$plot_bar_relcpue <- plot_barbox_relcpue(plot_type="median_bar")
-  #output$plot_box_relcpue <- plot_barbox_relcpue(plot_type="box")
-
   # Bar and box plot 
   # PI 7: Effort variability and stability
   plot_barbox_pi7varstab <- function(plot_type="median_bar", metric_choice="relative effort variability", ylab="PI 7: Relative effort variability"){#}, ylim=c(0,NA)){
@@ -1498,19 +1166,6 @@ server <- function(input, output, session) {
     return(p)
   })
   
-  # Plot histogram of effort multipliers
-  output$plot_hcrhistograms <- renderPlot({
-    
-    hcr_choices <- input$hcrchoice
-    if(length(hcr_choices) < 1){
-      return()
-    }
-    # Don't show historical
-    pdat <- subset(histodat, period != "Rest")
-    p <- hcr_histo_plot(hcr_choices, pdat)
-    return(p)
-  })
-
   # Kobe / Majuro stuff
   majuro_kobe_table <- function(period="Short", period_label="Short-term"){
     outfunc <- renderTable({
@@ -1554,6 +1209,7 @@ server <- function(input, output, session) {
   output$plot_kobe_ptables_medium <- majuro_kobe_plot(period="Medium")
   output$plot_kobe_ptables_short <- majuro_kobe_plot(period="Short")
   
+  # HCR output analysis plots
   hcr_op_plots <- function(type="op"){
     hcr_choices <- input$hcrchoice
     if(length(hcr_choices) < 1){
@@ -1585,7 +1241,6 @@ server <- function(input, output, session) {
     p <- p + theme(legend.position="bottom", legend.title=element_blank(), axis.text.x = element_text(angle = 45, vjust=0.5))
     return(p)
   }
-  
   output$plot_hcr_op <- renderPlot({
     return(hcr_op_plots(type="op"))
   })

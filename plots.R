@@ -135,28 +135,6 @@ hcr_plot <- function(hcr_choices, hcr_shape, hcr_points, lrp, trp, add_points=FA
   return(p)
 }
 
-hcr_histo_plot <- function(hcr_choices, histodat){
-  hcrcols <- get_hcr_colours(hcr_names=unique(histodat$hcrref), chosen_hcr_names=hcr_choices)
-  hdat <- subset(histodat, hcrref %in% hcr_choices)
-  hdat$period_name <- paste0(hdat$period, "-term")
-  hdat$period_name <- factor(hdat$period_name, levels=c("Short-term", "Medium-term", "Long-term"))
-  p <- ggplot(hdat, aes(x=bin, y=prop))
-  p <- p + coord_flip()
-  #p <- ggplot(hdat, aes(y=bin, x=prop))
-  p <- p + geom_bar(aes(fill=hcrref), stat='identity', position='identity',colour="black", alpha=0.7)
-  p <- p + facet_wrap(~period_name)
-  p <- p + theme_bw()
-  p <- p + theme(axis.text=element_text(size=16), axis.title=element_text(size=16), strip.text=element_text(size=16), legend.text=element_text(size=16))
-  p <- p + xlab("Catch or effort scaler") + ylab("Proportion")
-  p <- p + theme(legend.position="top", legend.title=element_blank())
-  p <- p + ylim(0, NA)
-  p <- p + xlim(0, NA)
-  p <- p + scale_fill_manual(values=hcrcols)
-  return(p)
-}
-
-
-
 mixpis_barbox_biol_plot <- function(dat, hcr_choices, betmp_choices, barbox_choice = "median_bar", stock_choice = stock_choice, facetskjorbet = "skjhcr", no_mixfacets_row=3){
   
     # SKJ HCR and BET MP colours
@@ -203,3 +181,4 @@ mixpis_barbox_biol_plot <- function(dat, hcr_choices, betmp_choices, barbox_choi
 }
 
 
+  
