@@ -18,7 +18,7 @@
 # Add table of Prob > LRP to mixed fishery
 # Drop mixed fishery impact and catch plots
 # Check impact plots match those in the BET and YFT report
-# YFT and BEt should be at 'recent levels' see CMM text
+# YFT and BET should be at 'recent levels' see CMM text
 
 #--------------------------------------------------------------
 
@@ -163,7 +163,7 @@ sbsbf02012text <- "On the SB/SBF=0 plot, the lower dashed line is the Limit Refe
 # Navbarpage inside a fluidpage?
 # Pretty nasty but it means we get the power of the navparPage and can have common side panel
 ui <- fluidPage(id="top",
-  #tags$head(includeHTML("google-analytics.html")),  # google analytics
+  tags$head(includeHTML("google-analytics.html")),  # google analytics
   #titlePanel("Performance Indicators and Management Procedures Explorer"),
   sidebarLayout(
     sidebarPanel(width=side_panel_width,
