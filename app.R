@@ -193,10 +193,6 @@ ui <- fluidPage(id="top",
       conditionalPanel(condition="input.nvp == 'compareMPs'",
         checkboxGroupInput(inputId = "pichoice", label="PI selection",choices = piselector, selected=sort(pis_list))
       ),
-      # Show spaghetti on the time series plots - only show when you get time series plots
-      conditionalPanel(condition="(input.nvp == 'explorePIs' && input.pitab=='pi3') || (input.nvp == 'compareMPs' && input.comptab == 'timeseries')",
-        checkboxInput("showspag", "Show trajectories", value=FALSE) 
-      ),
       # Catch grouping choice (all, PS in 678, PL in 1234) - show in compare MPs 
       #conditionalPanel(condition="(input.nvp == 'compareMPs' || (input.nvp == 'explorePIs' && (input.pitab == 'pi3' || input.pitab == 'pi6')))",
       conditionalPanel(condition="input.nvp == 'compareMPs'",
@@ -210,6 +206,10 @@ ui <- fluidPage(id="top",
       # Select plot type by bar, box or time
       conditionalPanel(condition="(input.nvp == 'explorePIs' && (input.pitab == 'pi3' || input.pitab == 'vulnb' || input.pitab == 'relcpuepl')) || (input.nvp == 'mixpis' && (input.mixpisid == 'mixss' || input.mixpisid == 'mixcatch')) ",
         radioButtons(inputId = "plotchoicebarboxtime", label="Plot selection",choices = list("Bar chart" = "median_bar", "Box plot" ="box", "Time series" = "time"), selected="median_bar")
+      ),
+      # Show spaghetti on the time series plots - only show when you get time series plots
+      conditionalPanel(condition="(input.nvp == 'explorePIs' && (input.pitab=='pi3' || input.pitab=='vulnb' || input.pitab=='relcpuepl')) || (input.nvp == 'compareMPs' && input.comptab == 'timeseries')",
+        checkboxInput("showspag", "Show trajectories", value=FALSE) 
       ),
       # In Management Procedures tab, show the points and trajectories
       # Change false to true to show performance options (can hide from users)
@@ -1080,7 +1080,7 @@ server <- function(input, output, session) {
     if(plot_choice == "time"){
       show_spaghetti <- input$showspag
       dat <- subset(yearqs, pi=="vb") 
-      wormdat <- subset(worms, pi=="pi3" & iter %in% wormiters) 
+      wormdat <- subset(worms, pi=="vb" & iter %in% wormiters) 
       p <- time_series_plot(dat=dat, hcr_choices=hcr_choices, wormdat=wormdat, last_plot_year=last_plot_year, short_term = short_term, medium_term = medium_term, long_term = long_term, show_spaghetti=show_spaghetti, outer_percentile_range = outer_percentiles, inner_percentile_range = inner_percentiles)
       p <- p + facet_grid(area_name ~ hcrref, scales=vbscale)#, ncol=1)
       p <- p + ylab(ylabel)
