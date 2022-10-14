@@ -48,4 +48,15 @@ pitable <- function(dat, percentile_range = c(10,90), signif=3){
   return(tabdat)
 }
 
-
+# Add or remove HCRs as selected? Sure
+#hcr_param_table <- function(hcr_choices){
+#  #hcr_choices <- input$hcrchoice
+#  if(length(hcr_choices) < 1){
+#    return()
+#  }
+#  # These data should be produced during the PI calculation
+#  # But for we now we can hardwire it
+#  all_hcr_refs <-  c("HCR 1 (+-10%)", "HCR 2 (+-10%)", "HCR 5 (+-10%)", "HCR 6 (+-10%)", "HCR 9 (+-10%)") 
+#  data.frame(hcr_ref = )
+#  
+#}

@@ -61,8 +61,8 @@ time_series_plot <- function(dat, hcr_choices, wormdat=NULL,
   # Rename for percentiles reference
   inner_ynames <- paste0("X", inner_percentile_range, ".")
   outer_ynames <- paste0("X", outer_percentile_range, ".")
-  # Chop out NA rows
-  dat <- dat[!is.na(dat$X50.),]
+  # Chop out NA rows - better to leave in and plot the gaps
+  #dat <- dat[!is.na(dat$X50.),]
   # Start the plot
   p <- ggplot(dat, aes(x=year))
   # The ribbon
@@ -130,7 +130,7 @@ hcr_plot <- function(hcr_choices, hcr_shape, hcr_points, lrp, trp, add_points=FA
   }
   # Add LRP and TRP
   p <- p + geom_vline(aes(xintercept=lrp), linetype=2)
-  p <- p + geom_vline(aes(xintercept=trp), linetype=2)
+  #p <- p + geom_vline(aes(xintercept=trp), linetype=2)
   p <- p + ylim(0, NA)
   return(p)
 }

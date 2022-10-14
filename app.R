@@ -33,7 +33,7 @@ source("funcs.R")
 source("plots.R")
 
 # Load the indicator data - including Kobe and Majuro data
-data_files <- load("data/Robustness_2022_results.Rdata")
+data_files <- load("data/MOC_2022_results.Rdata")
 
 # Mixed fishery data
 # Needs to be redone
@@ -186,7 +186,7 @@ ui <- fluidPage(id="top",
       )), # End of about condition
       # HCR selection - can select multiples
       # Only for the main Compare MPs tab, the MPs tab and SOME of the explorePIs tabs
-      conditionalPanel(condition="input.nvp == 'compareMPs' || (input.nvp == 'explorePIs' && (input.pitab == 'pi3' || input.pitab == 'pi6'|| input.pitab == 'vulnb')) || input.nvp == 'mps' || input.nvp == 'mixpis'",
+      conditionalPanel(condition="input.nvp == 'compareMPs' || (input.nvp == 'explorePIs' && (input.pitab == 'pi3' || input.pitab == 'pi6' || input.pitab == 'vulnb' || input.pitab == 'relcpuepl')) || input.nvp == 'mps' || input.nvp == 'mixpis'",
         checkboxGroupInput(inputId = "hcrchoice", label="SKJ HCR selection", selected = unique(periodqs$hcrref), choiceNames = as.character(unique(periodqs$hcrname)), choiceValues = unique(periodqs$hcrref))
       ),
       # PI choice - only shown in the compare PIs tab
@@ -194,7 +194,7 @@ ui <- fluidPage(id="top",
         checkboxGroupInput(inputId = "pichoice", label="PI selection",choices = piselector, selected=sort(pis_list))
       ),
       # Show spaghetti on the time series plots - only show when you get time series plots
-      conditionalPanel(condition="(input.nvp == 'explorePIs' && input.pitab=='pi3') || input.comptab == 'timeseries'",
+      conditionalPanel(condition="(input.nvp == 'explorePIs' && input.pitab=='pi3') || (input.nvp == 'compareMPs' && input.comptab == 'timeseries')",
         checkboxInput("showspag", "Show trajectories", value=FALSE) 
       ),
       # Catch grouping choice (all, PS in 678, PL in 1234) - show in compare MPs 
@@ -208,7 +208,7 @@ ui <- fluidPage(id="top",
       ),
       
       # Select plot type by bar, box or time
-      conditionalPanel(condition="(input.nvp == 'explorePIs' && (input.pitab == 'pi3' || input.pitab == 'vulnb')) || (input.nvp == 'mixpis' && (input.mixpisid == 'mixss' || input.mixpisid == 'mixcatch')) ",
+      conditionalPanel(condition="(input.nvp == 'explorePIs' && (input.pitab == 'pi3' || input.pitab == 'vulnb' || input.pitab == 'relcpuepl')) || (input.nvp == 'mixpis' && (input.mixpisid == 'mixss' || input.mixpisid == 'mixcatch')) ",
         radioButtons(inputId = "plotchoicebarboxtime", label="Plot selection",choices = list("Bar chart" = "median_bar", "Box plot" ="box", "Time series" = "time"), selected="median_bar")
       ),
       # In Management Procedures tab, show the points and trajectories
@@ -396,7 +396,6 @@ ui <- fluidPage(id="top",
             # *** Vulnerable biomass
             # Separate panels for areas 1 - 4
             tabPanel("Vulnerable biomass under pole and line fisheries", value="vulnb",
-                     
               column(12, 
                 p("Vulnerable biomass is the biomass that is exposed to a particular fishery through a combination of the biomass at size and the fishery selectivity. These plots show the vulnerable biomass to the pole and line fisheries in model areas 1 - 4."),
                 radioButtons(inputId = "vbscale", label="Same scale?",choiceNames=c("Yes", "No"), choiceValues=c("fixed", "free"), selected="fixed", inline=TRUE),
@@ -406,6 +405,17 @@ ui <- fluidPage(id="top",
                 )
               )
             ), # End of vulnerable biomass
+            # *** Pole and line CPUE
+            # Separate panels for areas 1 - 4
+            tabPanel("Relative CPUE of pole and line fisheries", value="relcpuepl",
+              column(12, 
+                p("The CPUE of the pole and line fisheries in model areas 1 - 4 relative to the period 2001-2004."),
+                fluidRow(
+                  plotOutput("plot_relcpuepl",  height="800px"),
+                  p(yearrangetext)
+                )
+              )
+            ), # End of pole and line CPUE
            
             
             # *** Kobe and Majuro
@@ -494,6 +504,9 @@ ui <- fluidPage(id="top",
         tabPanel("About", value="about",
           fluidRow(column(8, 
             spc_about()
+          )),
+          fluidRow(column(8, 
+            includeMarkdown("introtext/news.md")
           ))
         ) # End of About
       ) # End of navbarPage()
@@ -922,7 +935,7 @@ server <- function(input, output, session) {
   output$plot_box_comparehcr <- plot_barbox_comparehcr(plot_type="box")
 
   # Time series comparisons - just three plots
-  pinames_ts <- c("SB/SBF=0", "PI 3: Catch (rel. to 2013-2015)" ,"PI 4: Relative CPUE")
+  pinames_ts <- c("SB/SBF=0", "PI 3: Catch (rel. to 2013-2015)" ,"PI 4: Relative PS CPUE")
   # pis to plot time series of
   
   # Try facetting rather than plotting one on top of the other
@@ -1072,6 +1085,41 @@ server <- function(input, output, session) {
       p <- p + facet_grid(area_name ~ hcrref, scales=vbscale)#, ncol=1)
       p <- p + ylab(ylabel)
       #p <- p +  ylim(c(0,NA))
+      # Axes limits set here or have tight?
+      p <- p + scale_x_continuous(expand = c(0, 0))
+      # Size of labels etc
+      p <- p + theme(axis.text=element_text(size=16), axis.title=element_text(size=16), strip.text=element_text(size=16), legend.text=element_text(size=16))
+    }
+    return(p)
+  })
+  
+  # For exploring the vulnerable biomass to pole and line in different regions
+  output$plot_relcpuepl <- renderPlot({
+    # If no HCRs chosen just leave
+    hcr_choices <- input$hcrchoice
+    if(length(hcr_choices) < 1){
+      return()
+    }
+    #vbscale <- input$vbscale
+    plot_choice <- input$plotchoicebarboxtime
+    ylabel <- "Relative CPUE of pole and line fisheries"
+
+    if (plot_choice %in% c("median_bar","box")){
+      dat <- subset(periodqs, period != "Rest" & pi=="pi4" & piname =="PI 4: Relative P&L CPUE") 
+      p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_choice)
+      p <- p + ylab(ylabel)
+      p <- p + ylim(c(0,NA))
+      p <- p + facet_wrap(~area_name, ncol=no_facets_row, scales="free")
+    }
+
+    if(plot_choice == "time"){
+      show_spaghetti <- input$showspag
+      dat <- subset(yearqs, pi=="pi4" & piname=="PI 4: Relative P&L CPUE") 
+      wormdat <- subset(worms, pi=="pi4" & piname=="PI 4: Relative P&L CPUE" & iter %in% wormiters) 
+      p <- time_series_plot(dat=dat, hcr_choices=hcr_choices, wormdat=wormdat, last_plot_year=last_plot_year, short_term = short_term, medium_term = medium_term, long_term = long_term, show_spaghetti=show_spaghetti, outer_percentile_range = outer_percentiles, inner_percentile_range = inner_percentiles)
+      p <- p + facet_grid(area_name ~ hcrref, scales="free")#, ncol=1)
+      p <- p + ylab(ylabel)
+      p <- p +  ylim(c(0,NA))
       # Axes limits set here or have tight?
       p <- p + scale_x_continuous(expand = c(0, 0))
       # Size of labels etc
