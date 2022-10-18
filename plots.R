@@ -75,7 +75,7 @@ time_series_plot <- function(dat, hcr_choices, wormdat=NULL,
   # These look bad - hard to see the colours
   if (!is.null(wormdat) & show_spaghetti==TRUE){
     wormdat <- subset(wormdat, hcrref %in% hcr_choices)
-    wormdat <- wormdat[!is.na(wormdat$value),]
+    #wormdat <- wormdat[!is.na(wormdat$value),]
     # Put a black background on the line to help
     p <- p + geom_line(data=wormdat, aes(x=year, y=value, group=wormid), colour="black", linetype=linetype_worm, size=size_worm*1.2)
   }

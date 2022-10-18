@@ -49,14 +49,27 @@ pitable <- function(dat, percentile_range = c(10,90), signif=3){
 }
 
 # Add or remove HCRs as selected? Sure
-#hcr_param_table <- function(hcr_choices){
-#  #hcr_choices <- input$hcrchoice
-#  if(length(hcr_choices) < 1){
-#    return()
-#  }
-#  # These data should be produced during the PI calculation
-#  # But for we now we can hardwire it
-#  all_hcr_refs <-  c("HCR 1 (+-10%)", "HCR 2 (+-10%)", "HCR 5 (+-10%)", "HCR 6 (+-10%)", "HCR 9 (+-10%)") 
-#  data.frame(hcr_ref = )
-#  
-#}
+get_hcr_param_table <- function(){#hcr_choices){
+  #hcr_choices <- input$hcrchoice
+  #if(length(hcr_choices) < 1){
+  #  return()
+  #}
+  # These data should be produced during the PI calculation
+  # But for we now we can hardwire it
+  all_hcr_names <-  c("HCR 1 (+-10%)", "HCR 2 (+-10%)", "HCR 5 (+-10%)", "HCR 6 (+-10%)", "HCR 9 (+-10%)") 
+  all_hcr_names_padding <- c(all_hcr_names, rep(" ", length(all_hcr_names))) 
+  all_hcr_names_padding <- all_hcr_names_padding[c(1,6,2,7,3,8,4,9,5,10)]
+  
+  hcrtab <- data.frame(hcr_name = rep(all_hcr_names, each=2),
+             hcr = all_hcr_names_padding,
+             metric = c("SB/SBF=0", "HCR output"),
+             limit = 0.2,
+             threshold = c(0.42, 1.0, 0.42, 1.0, 0.37, 1.0, 0.37, 1.0, 0.37, 1.0),
+             step_end = c(rep(" ", 6), 0.47, 1.0, 0.47, 1.0),
+             maximum = c(rep(" ", 6), 0.9, 1.3, 0.8, 1.4))
+  # Fix column names
+  colnames(hcrtab) <- c("hcr_ref", "HCR", " ", "Limit", "Threshold", "Step end", "Maximum")
+  #hcrtab <- hcrtab[hcrtab$hcr_name %in% hcr_choices,]
+  return(hcrtab)
+}
+

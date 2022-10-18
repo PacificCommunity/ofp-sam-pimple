@@ -28,6 +28,7 @@ library(RColorBrewer)
 library(markdown)
 library(data.table)
 library(tidyr)
+library(DT)
 
 source("funcs.R")
 source("plots.R")
@@ -88,7 +89,7 @@ yearqs <- yearqs[year %in% first_plot_year:last_plot_year]
 worms <- worms[year %in% first_plot_year:last_plot_year]
 
 # For the worms - same worms for all plots
-nworms <-  min(3,length(unique(worms$iter)))
+nworms <-  min(7,length(unique(worms$iter)))
 set.seed(95)
 wormiters <- sample(unique(worms$iter), nworms)
 
@@ -479,23 +480,41 @@ ui <- fluidPage(id="top",
         # The Management Procedures
         #------------------------------------------
         tabPanel(title="SKJ management procedures", value="mps",
-          column(12,
-            fluidRow(            
+          #column(12,
+          #  fluidRow(            
+          #    p("Currently all the candidate skipjack management procedures have the same estimation method (an 8-region MULTIFAN-CL stock assessment model)."),
+          #    p("This means that we are only comparing the performance of the HCRs. However, this may not always be the case."),
+          #    p("The current HCRs use a value of estimated depletion (SB/SBF=0) to set a multiplier. This multipler is applied to the catch or effort in 2012 for each fishery to set a new catch or effort limit for the next time period."),
+          #    plotOutput("plot_hcrshape",  height="600px"),
+          #  )
+          #),
+          # Can wrap each element in a fluidRow if necessary
+          fluidRow(
               p("Currently all the candidate skipjack management procedures have the same estimation method (an 8-region MULTIFAN-CL stock assessment model)."),
               p("This means that we are only comparing the performance of the HCRs. However, this may not always be the case."),
               p("The current HCRs use a value of estimated depletion (SB/SBF=0) to set a multiplier. This multipler is applied to the catch or effort in 2012 for each fishery to set a new catch or effort limit for the next time period."),
-              plotOutput("plot_hcrshape",  height="600px"),
-            )
+            column(6, h3("HCR shapes"),
+                      plotOutput("plot_hcrshape",  height="600px")),
+            column(6, h3("HCR parameters"),
+                      DTOutput("hcr_table"))
           ),
+          
+          
           fluidRow(
+            h3("HCR output"),
             p("The distribution of HCR output in each management period. The box and whiskers show the 50th and 95th percentiles respectively."),
             p("Note that the minimum y-limit is not fixed at 0."),
             plotOutput("plot_hcr_op",  height="600px")
           ),
           fluidRow(
+            h3("Change in HCR output"),
             p("The distribution of absolute change in HCR output in each management period. The box and whiskers show the 50th and 95th percentiles respectively."),
+            p("This plot therefore shows the variability in the HCR output. The large the value, the more the output changes between management periods."),
             plotOutput("plot_hcr_op_diff",  height="600px")
-          )
+          )#,
+          #fluidRow(
+          #  DTOutput("hcr_table")
+          #)
         ), # End of MPs tab
         
         #------------------------------------------------------
@@ -1295,6 +1314,31 @@ server <- function(input, output, session) {
   
   output$plot_hcr_op_diff <- renderPlot({
     return(hcr_op_plots(type="diff"))
+  })
+  
+  output$hcr_table <- renderDT({
+    hcr_tab <- get_hcr_param_table()
+    # Able to choose which HCRs
+    hcr_choices <- input$hcrchoice
+    if(length(hcr_choices) < 1){
+      return()
+    }
+    
+    all_hcr_names <- unique(hcr_tab$hcr_ref)
+    hcr_cols <- get_hcr_colours(hcr_names=all_hcr_names, chosen_hcr_names=hcr_choices)
+    
+    hcr_tab <- hcr_tab[hcr_tab$hcr_ref %in% hcr_choices,]
+    # Syntax to not show a column is horrible. But cannot drop column as needed to colour the rows
+    hcr_tabDT <- datatable(hcr_tab,
+                   options=list(
+                     pageLength=length(hcr_choices)*2,
+                     dom='t',
+                     columnDefs=list(list(visible=FALSE, targets=0)), # Don't show first column
+                     ordering=F), # Remove ordering arrows
+                   rownames=FALSE,
+                   ) 
+    hcr_tabDT <- formatStyle(hcr_tabDT, columns="hcr_ref", target='row', color=styleEqual(hcr_choices, hcr_cols), fontWeight = 'bold')
+    return(hcr_tabDT)
   })
 
 } # end of server
