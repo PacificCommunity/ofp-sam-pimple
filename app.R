@@ -160,7 +160,6 @@ pi36text <- "The grouping for PIs 3 and 6 can be selected with the drop down men
 biotext <- "PIs 1, 8 and SB/SBF=0 are calculated over all model areas."
 relcatchtext <- "Note that the catches are relative to the average catch in that area grouping in the years 2013-2015."
 barchartplottext <- "The height of each bar shows the median expected value. Note that the bar charts do not show any uncertainty which can be important (see the box plots)."
-
 boxplottext <- paste0("For box plots the box contains the ", inner_percentiles[2] - inner_percentiles[1],"th percentile, the whiskers show the ", outer_percentiles[2] - outer_percentiles[1], "th percentile and the horizontal line is the median. The wider the range, the less certain we are about the expected value.")
 tabletext <- paste0("The tables show the median indicator values in each time period. The values inside the parentheses are the ", outer_percentiles[2] - outer_percentiles[1] ,"th percentile range.")
 timeseriesplottext <- paste0("The outer ribbons show the ", outer_percentiles[2] - outer_percentiles[1], "th percentile range and the inner ribbons show the ", inner_percentiles[2] - inner_percentiles[1], "th percentile range. The dashed, black line is the median value.")
@@ -216,7 +215,7 @@ ui <- fluidPage(id="top",
       
       # Select plot type by bar, box or time
       conditionalPanel(condition="(input.nvp == 'explorePIs' && (input.pitab == 'pi3' || input.pitab == 'vulnb' || input.pitab == 'relcpuepl')) || (input.nvp == 'mixpis' && (input.mixpisid == 'mixss' || input.mixpisid == 'mixcatch')) ",
-        radioButtons(inputId = "plotchoicebarboxtime", label="Plot selection",choices = list("Bar chart" = "median_bar", "Box plot" ="box", "Time series" = "time"), selected="median_bar")
+        radioButtons(inputId = "plotchoicebarboxtime", label="Plot selection",choices = list("Bar chart" = "median_bar", "Box plot" ="box", "Time series" = "time"), selected="box")
       ),
       # Show spaghetti on the time series plots - only show when you get time series plots
       conditionalPanel(condition="(input.nvp == 'explorePIs' && (input.pitab=='pi3' || input.pitab=='vulnb' || input.pitab=='relcpuepl')) || (input.nvp == 'compareMPs' && input.comptab == 'timeseries')",
@@ -250,7 +249,7 @@ ui <- fluidPage(id="top",
       # Select plot type by bar or box (Note - need to include the NVP input as the the pitab input still has value even if not seen)
       #conditionalPanel(condition="(input.nvp == 'explorePIs') && (input.pitab== 'pi6') || (input.nvp == 'mixpis' && (input.mixpisid == 'mixss' || input.mixpisid == 'mixcatch'))",
       conditionalPanel(condition="(input.nvp == 'explorePIs') && (input.pitab== 'pi6')",
-        radioButtons(inputId = "plotchoicebarbox", label="Plot selection",choices = list("Bar chart" = "median_bar", "Box plot" ="box"), selected="median_bar")
+        radioButtons(inputId = "plotchoicebarbox", label="Plot selection",choices = list("Bar chart" = "median_bar", "Box plot" ="box"), selected="box")
       ),
       
       # Box or ribbon for impact plots
@@ -323,20 +322,6 @@ ui <- fluidPage(id="top",
         tabPanel("Compare performance", value="compareMPs",
           tabsetPanel(id="comptab",
                       
-            tabPanel("Bar charts", value="bar",
-              fluidRow(column(12,
-                p(barchartplottext),
-                plotOutput("plot_bar_comparehcr", height="auto") 
-              )),
-              fluidRow(column(12,
-                p(yearrangetext),
-                p(pi47text),
-                p(biotext),
-                p(pi36text),
-                p(sbsbf02012text)
-              ))
-            ),
-            
             tabPanel("Box plots", value="box",
               fluidRow(column(12,
                 p(boxplottext),
@@ -351,6 +336,19 @@ ui <- fluidPage(id="top",
               ))
             ),
             
+            tabPanel("Bar charts", value="bar",
+              fluidRow(column(12,
+                p(barchartplottext),
+                plotOutput("plot_bar_comparehcr", height="auto") 
+              )),
+              fluidRow(column(12,
+                p(yearrangetext),
+                p(pi47text),
+                p(biotext),
+                p(pi36text),
+                p(sbsbf02012text)
+              ))
+            ),
             
             tabPanel("Time series plots", value="timeseries",
               fluidRow(column(12,
