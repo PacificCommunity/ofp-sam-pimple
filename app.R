@@ -9,16 +9,7 @@
 # Copyright 2020 OFP SPC MSE Team. Distributed under the GPL 3
 # Maintainer: Finlay Scott, OFP SPC
 # Soundtrack: People and Industry by Warrington-Runcorn New Town Development Plan
-#--------------------------------------------------------------
-# Stuff to add and check
-
-# In mixed fishery tabs, add picture of YFT or BET depending on stock selection. Or at least make it clearer what the stock is.
-# Mixed fishery catches should be relative in line with main page? Or is it more informative to see relative PSA / TLL etc?
-# Drop PS fishery (as small)
-# Add table of Prob > LRP to mixed fishery
-# Drop mixed fishery impact and catch plots
-# Check impact plots match those in the BET and YFT report
-# YFT and BET should be at 'recent levels' see CMM text
+#             Time Turns Into Space by Deliquent Crystals
 
 #--------------------------------------------------------------
 
@@ -34,7 +25,7 @@ source("funcs.R")
 source("plots.R")
 
 # Load the indicator data - including Kobe and Majuro data
-data_files <- load("data/MOC_2022_results.Rdata")
+data_files <- load("data/WCPFC_2022_results.Rdata")
 
 # Mixed fishery data
 # Needs to be redone
@@ -44,7 +35,7 @@ data_files <- load("data/MOC_2022_results.Rdata")
 #mixpi_periodqs <- mixpi_periodqs[pi != "impact"]
 
 
-#------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
 
 # Additional fixes
 
@@ -71,6 +62,10 @@ setnames(skj_hcr_names, old="msectrl", new="Z")
 
 #------------------------------------------------------------------------------------------------------
 
+# Check catch stability - why are minimums same as median for medium and long term
+# Because negative - because the minimum stability is based on 5% but whisker is 2.5%
+# periodqs[piname == "PI 6: Catch stability" & area == "total" & metric == "relative catch stability" & period == "Medium",]
+
 # Additional data processing
 
 # General plotting parameters
@@ -80,9 +75,16 @@ long_term <- worms[period == "Long", sort(unique(year))]
 
 last_plot_year <- max(long_term)
 first_plot_year <- 1990
-# Quantiles - need to match what is in the data objects (from the PI calc script)
-inner_percentiles <- c(25,75)
-outer_percentiles <- c(10,90)
+
+# Quantiles - extract calculated percentiles from data object
+qnames <- colnames(periodqs)[!(colnames(periodqs) %in% c("area", "msectrl", "metric", "period", "pi", "piname", "hcrname", "hcrref", "area_name", "X50."))]
+qnames <- substring(qnames,2) # Drop the X
+qnames <- substring(qnames,1,nchar(qnames)-1)
+quantiles <- as.numeric(qnames)
+# and the last character (a dot)
+inner_percentiles <- quantiles[c(2,length(quantiles)-1)]
+outer_percentiles <- quantiles[c(1,length(quantiles))]
+quantiles <- quantiles / 100
 
 # Trim out years for tight time series plots
 yearqs <- yearqs[year %in% first_plot_year:last_plot_year]
@@ -96,7 +98,8 @@ wormiters <- sample(unique(worms$iter), nworms)
 # Careful with these - they are only used for plotting lines, NOT for calculating the indicators
 lrp <- 0.2
 trp1 <- 0.5
-trp2 <- unlist(yearqs[piname == "SB/SBF=0" & msectrl == "Z2" & area == "all" & year == 2012, "X50."]) # 0.4611075
+trp2 <- unlist(yearqs[piname == "SB/SBF=0" & msectrl == "Z2" & area == "all" & year == 2012, "X50."]) # 0.4545289
+trp3 <- 0.41 # Les' two-eyed TRP
 
 # Find common iters between HCRs - used for HCR plots so we can directly compare
 # Some iters dropped due to errors
@@ -118,7 +121,13 @@ pis_list <- sort(unique(periodqs[,piname]))
 # Drop the variability ones (they point the wrong way and are alternatives to the stability indicators)
 pis_list <- pis_list[!grepl("variability", pis_list)]
 # Also drop SB, SBSBF0latest, the Proximity 0.5 one until we fix the TRP selector, only look at relative catches. Drop Relative CPUE for P&L, only want PS for now.
-pis_list <- pis_list[!(pis_list %in% c("SB", "SB/SBF=0latest", "Vuln. biomass", "PI 8: Proximity to SB/SBF=0 (0.5)", "PI 3: Catch", "PI 4: Relative P&L CPUE"))] 
+pis_list <- pis_list[!(pis_list %in% c("SB",
+                                       "SB/SBF=0latest",
+                                       "SB/SBF=0 relative to 2012",
+                                       "Vuln. biomass",
+                                       "PI 8: Proximity to SB/SBF=0 (0.5)",
+                                       "PI 8: Proximity to SB/SBF=0 (2012)",
+                                       "PI 3: Catch", "PI 4: Relative P&L CPUE"))] 
 piselector <- as.list(pis_list)
 pis_text <- unlist(lapply(strsplit(pis_list,"\n"),'[',1))
 names(piselector) <- pis_text
@@ -151,9 +160,10 @@ pi36text <- "The grouping for PIs 3 and 6 can be selected with the drop down men
 biotext <- "PIs 1, 8 and SB/SBF=0 are calculated over all model areas."
 relcatchtext <- "Note that the catches are relative to the average catch in that area grouping in the years 2013-2015."
 barchartplottext <- "The height of each bar shows the median expected value. Note that the bar charts do not show any uncertainty which can be important (see the box plots)."
-boxplottext <- "For box plots the box contains the 50th percentile, the whiskers show the 80th percentile and the horizontal line is the median. The wider the range, the less certain we are about the expected value."
-tabletext <- "The tables show the median indicator values in each time period. The values inside the parentheses are the 80th percentile range."
-timeseriesplottext <- "The outer ribbons show the 80th percentile range and the inner ribbons show the 50th percentile range. The dashed, black line is the median value."
+
+boxplottext <- paste0("For box plots the box contains the ", inner_percentiles[2] - inner_percentiles[1],"th percentile, the whiskers show the ", outer_percentiles[2] - outer_percentiles[1], "th percentile and the horizontal line is the median. The wider the range, the less certain we are about the expected value.")
+tabletext <- paste0("The tables show the median indicator values in each time period. The values inside the parentheses are the ", outer_percentiles[2] - outer_percentiles[1] ,"th percentile range.")
+timeseriesplottext <- paste0("The outer ribbons show the ", outer_percentiles[2] - outer_percentiles[1], "th percentile range and the inner ribbons show the ", inner_percentiles[2] - inner_percentiles[1], "th percentile range. The dashed, black line is the median value.")
 timeseriesplottext2 <-  "The dashed vertical lines show, from left, the start of the MSE evaluation with three years of 2012 assumptions, the start of the HCR operating with the short-, medium- and long-term periods."
 stabtext <- "Note that the stability can only be compared between time periods, not between areas or area groups, i.e. it is the relative stability in that area."
 sbsbf02012text <- "On the SB/SBF=0 plot, the lower dashed line is the Limit Reference Point and the upper dashed line is the mean SB/SBF=0 in 2012."
@@ -216,8 +226,8 @@ ui <- fluidPage(id="top",
       # Change false to true to show performance options (can hide from users)
       #conditionalPanel(condition="((input.nvp == 'mps') && true)",
       conditionalPanel(condition="((input.nvp == 'mps') && false)",
-        p("Secret HCR performance options"),
-        radioButtons(inputId="hcrperformance", label="HCR performance options", choices=list("Show nothing" = "shownothing", "Show points" = "showpoints", "Show paths" = "showpaths"), selected="shownothing"), 
+        p("HCR performance options"),
+        radioButtons(inputId="hcrperformance", label="HCR performance options", choices=list("Show nothing" = "shownothing", "Show selection of points" = "showpoints", "Show iter paths" = "showpaths"), selected="shownothing"), 
         conditionalPanel(condition="input.hcrperformance == 'showpaths'",
           numericInput(inputId='hcrperfiter', label="Iter to show path for", value=1, min=1, max=length(common_iters), step=1)
         )
@@ -357,7 +367,7 @@ ui <- fluidPage(id="top",
               ))
             ),
             tabPanel("Table", value="bigtable",
-              tags$span(title="Median indicator values. The values inside the parentheses are the 80th percentile range.",
+              tags$span(title=paste0("Median indicator values. The values inside the parentheses are the ", outer_percentiles[2] - outer_percentiles[1], "th percentile range."),
                 p(tabletext),
                 tableOutput("table_pis_short"),
                 tableOutput("table_pis_medium"),
@@ -502,13 +512,13 @@ ui <- fluidPage(id="top",
           
           fluidRow(
             h3("HCR output"),
-            p("The distribution of HCR output in each management period. The box and whiskers show the 50th and 95th percentiles respectively."),
+            p(paste0("The distribution of HCR output in each management period. The box and whiskers show the ", inner_percentiles[2] - inner_percentiles[1],  "th and ",outer_percentiles[2] - outer_percentiles[1], "th percentiles respectively.")),
             p("Note that the minimum y-limit is not fixed at 0."),
             plotOutput("plot_hcr_op",  height="600px")
           ),
           fluidRow(
             h3("Change in HCR output"),
-            p("The distribution of absolute change in HCR output in each management period. The box and whiskers show the 50th and 95th percentiles respectively."),
+            p(paste0("The distribution of absolute change in HCR output in each management period. The box and whiskers show the ", inner_percentiles[2] - inner_percentiles[1],  "th and ",outer_percentiles[2] - outer_percentiles[1], "th percentiles respectively.")),
             p("This plot therefore shows the variability in the HCR output. The large the value, the more the output changes between management periods."),
             plotOutput("plot_hcr_op_diff",  height="600px")
           )#,
@@ -573,7 +583,7 @@ server <- function(input, output, session) {
     dat <- dplyr::filter(periodqs, period != "Rest" & pi %in% pi_choices & metric %in% metric_choices & area %in% area_choices)
     dat$hcrname <- as.character(dat$hcrname)
     dat$hcrref <- as.character(dat$hcrref)
-    p <- barboxplot(dat=dat, hcr_choices=demo_hcr_choices, plot_type="median_bar")
+    p <- barboxplot(dat=dat, hcr_choices=demo_hcr_choices, plot_type="median_bar", quantiles=quantiles)
     #p <- p + ggplot2::ylim(0,NA)
     p <- p + ggplot2::ylab("Value") + ggplot2::xlab("Time period")
     return(p)
@@ -587,7 +597,7 @@ server <- function(input, output, session) {
     dat <- dplyr::filter(periodqs, period != "Rest" & pi %in% pi_choices & metric %in% metric_choices & area %in% area_choices)
     dat$hcrname <- as.character(dat$hcrname)
     dat$hcrref <- as.character(dat$hcrref)
-    p <- barboxplot(dat=dat, hcr_choices=demo_hcr_choices, plot_type="box")
+    p <- barboxplot(dat=dat, hcr_choices=demo_hcr_choices, plot_type="box", quantiles=quantiles)
     #p <- p + ggplot2::ylim(0,NA)
     p <- p + ggplot2::ylab("Value") + ggplot2::xlab("Time period")
     return(p)
@@ -919,7 +929,7 @@ server <- function(input, output, session) {
       # Need to be careful as PI 4 has five areas - PL 1- 4 and ps678x
       dat <- subset(periodqs, period != "Rest" & area %in% c("all", catch_area_choice, "ps678x") & piname %in% pi_choices & metric != "catch stability")
 
-      p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_type)
+      p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_type, quantiles=quantiles)
       # Do we fix axis at 0? Probably
       p <- p + ggplot2::ylim(0,NA)
       # Coord cartesian to zoom
@@ -1051,7 +1061,7 @@ server <- function(input, output, session) {
 
     if (plot_choice %in% c("median_bar","box")){
       dat <- subset(periodqs, period != "Rest" & pi=="pi3" & area %in% area_choice & metric == catch_rel_choice) 
-      p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_choice)
+      p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_choice, quantiles=quantiles)
       p <- p + ggplot2::ylab(ylabel)
       #p <- p + ggplot2::ylim(c(0,NA))
       p <- p + ggplot2::facet_wrap(~area_name, ncol=no_facets_row)
@@ -1090,7 +1100,7 @@ server <- function(input, output, session) {
 
     if (plot_choice %in% c("median_bar","box")){
       dat <- subset(periodqs, period != "Rest" & pi=="vb") 
-      p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_choice)
+      p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_choice, quantiles=quantiles)
       p <- p + ylab(ylabel)
       #p <- p + ylim(c(0,NA))
       p <- p + facet_wrap(~area_name, ncol=no_facets_row, scales=vbscale)
@@ -1125,7 +1135,7 @@ server <- function(input, output, session) {
 
     if (plot_choice %in% c("median_bar","box")){
       dat <- subset(periodqs, period != "Rest" & pi=="pi4" & piname =="PI 4: Relative P&L CPUE") 
-      p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_choice)
+      p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_choice, quantiles=quantiles)
       p <- p + ylab(ylabel)
       p <- p + ylim(c(0,NA))
       p <- p + facet_wrap(~area_name, ncol=no_facets_row, scales="free")
@@ -1168,7 +1178,7 @@ server <- function(input, output, session) {
     metric_choice <-  paste("relative catch", stabvar_choice, sep=" ") # or stability
     ylabel <- paste("PI 6: ",   paste0(toupper(substr(stabvar_choice, 1, 1)), substr(stabvar_choice, 2, nchar(stabvar_choice))), " of relative catch", sep="")
     dat <- subset(periodqs, period != "Rest" & pi=="pi6" & area %in% area_choice & metric == metric_choice) 
-    p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_choice)
+    p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_choice, quantiles=quantiles)
     p <- p + ggplot2::ylab(ylabel)
     #p <- p + ggplot2::ylim(c(0,NA))
     p <- p + ggplot2::facet_wrap(~area_name, ncol=no_facets_row)
@@ -1188,7 +1198,7 @@ server <- function(input, output, session) {
       }
       # Choose if relative to year X
       dat <- subset(periodqs, period != "Rest" & pi=="pi7" & metric==metric_choice) 
-      p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_type)
+      p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_type, quantiles=quantiles)
       p <- p + ggplot2::ylab(ylab)
       #p <- p + ggplot2::ylim(ylim)
       return(p)
@@ -1276,6 +1286,10 @@ server <- function(input, output, session) {
   output$plot_kobe_ptables_medium <- majuro_kobe_plot(period="Medium")
   output$plot_kobe_ptables_short <- majuro_kobe_plot(period="Short")
   
+  # Checking distribution of scaler in first year
+  #pdat <- hcrresultsdf[year == 2021] 
+  #p <- ggplot(pdat, aes(x=scaler)) + geom_histogram() + facet_wrap(~msectrl)
+  
   # HCR output analysis plots
   hcr_op_plots <- function(type="op"){
     hcr_choices <- input$hcrchoice
@@ -1285,7 +1299,8 @@ server <- function(input, output, session) {
     if(type=="op"){
       pdat <- subset(scaler, hcrref %in% hcr_choices)
       ylabel <- ("Catch or effort multiplier")
-      miny <- min(pdat[,"X2.5."]) * 0.9
+      minq_col <- paste0("X",min(quantiles)*100,".")
+      miny <- min(pdat[,..minq_col]) * 0.9
       ylims <- c(miny, NA)
     }
     if(type=="diff"){
@@ -1296,9 +1311,14 @@ server <- function(input, output, session) {
     
     all_hcr_names <- sort(unique(scaler$hcrref))
     hcr_cols <- get_hcr_colours(hcr_names=all_hcr_names, chosen_hcr_names=hcr_choices)
+    quantiles_text <- paste0("X", quantiles * 100, ".")
+    ymin <- quantiles_text[1]
+    ymax <- quantiles_text[4]
+    lower <- quantiles_text[2]
+    upper <- quantiles_text[3]
     
     p <- ggplot(pdat, aes(x=as.factor(year)))
-    p <- p + geom_boxplot(aes(ymin=X2.5., ymax=X97.5., lower=X25., upper=X75., middle=X50., fill=hcrref), stat="identity", width=0.7)
+    p <- p + geom_boxplot(aes_string(ymin=ymin, ymax=ymax, lower=lower, upper=upper, middle="X50.", fill="hcrref"), stat="identity", width=0.7)
     p <- p + ylab(ylabel)
     p <- p + xlab("Management period start year")
     p <- p + scale_fill_manual(values=hcr_cols)
@@ -1308,6 +1328,7 @@ server <- function(input, output, session) {
     p <- p + theme(legend.position="bottom", legend.title=element_blank(), axis.text.x = element_text(angle = 45, vjust=0.5))
     return(p)
   }
+  
   output$plot_hcr_op <- renderPlot({
     return(hcr_op_plots(type="op"))
   })
