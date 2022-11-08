@@ -290,6 +290,12 @@ ui <- fluidPage(id="top",
           fluidRow(column(8, 
             includeMarkdown("introtext/introduction.md")
           )),
+          fluidRow(column(8, 
+            includeMarkdown("introtext/assumptions.md")
+          )),
+          fluidRow(column(8, 
+            includeMarkdown("introtext/background.md")
+          )),
           fluidRow(
             column(4, 
               includeMarkdown("introtext/barcharttext.md")
