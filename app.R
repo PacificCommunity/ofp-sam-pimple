@@ -9,7 +9,7 @@
 # Copyright 2020 OFP SPC MSE Team. Distributed under the GPL 3
 # Maintainer: Finlay Scott, OFP SPC
 # Soundtrack: People and Industry by Warrington-Runcorn New Town Development Plan
-#             Time Turns Into Space by Deliquent Crystals
+#             Time Turns Into Space by Deliquescent Crystals
 
 #--------------------------------------------------------------
 
@@ -168,6 +168,34 @@ stabtext <- "Note that the stability can only be compared between time periods, 
 sbsbf02012text <- "On the SB/SBF=0 plot, the lower dashed line is the Limit Reference Point and the upper dashed line is the mean SB/SBF=0 in 2012."
 
 #----------------------------------------------------------------------------------------------------
+
+# Fake place holder app
+#ui <- fluidPage(
+#    sidebarPanel(width=side_panel_width,
+#      br(),
+#      img(src = "spc.png", height = 60),
+#      br(),
+#      br(),
+#      tags$html(
+#        tags$h1("PIMPLE"),
+#        tags$p("Performance Indicators and Management Procedures expLorEr"),
+#        tags$footer(
+#          tags$p("version 1.0.0 Tarantula Deadly Cargo"),
+#          tags$p("Copyright 2021 OFP SPC MSE Team."),
+#          tags$p("Distributed under the GPL 3")
+#        )
+#      )
+#    ),
+#    mainPanel(width=main_panel_width,
+#      tags$style(type="text/css", "body {padding-top: 70px;}"), 
+#      h1("PIMPLE is being updated. Check back soon.")
+#    )
+#)
+
+
+
+
+
 # The actual app!
 
 # Navbarpage inside a fluidpage?
@@ -189,7 +217,7 @@ ui <- fluidPage(id="top",
           tags$h1("PIMPLE"),
           tags$p("Performance Indicators and Management Procedures expLorEr"),
           tags$footer(
-            tags$p("version 0.5.0 Mork n Mindy"),
+            tags$p("version 1.0.0 Tarantula Deadly Cargo"),
             tags$p("Copyright 2021 OFP SPC MSE Team."),
             tags$p("Distributed under the GPL 3")
           )
@@ -999,7 +1027,8 @@ server <- function(input, output, session) {
     if ("SB/SBF=0" %in% pi_choices){
       p <- p + ggplot2::geom_hline(data=data.frame(yint=lrp,piname="SB/SBF=0"), ggplot2::aes(yintercept=yint), linetype=2)
       #p <- p + ggplot2::geom_hline(data=data.frame(yint=trp,piname="SB/SBF=0"), ggplot2::aes(yintercept=yint), linetype=2)
-      p <- p + ggplot2::geom_hline(data=data.frame(yint=trp2, piname="SB/SBF=0"), ggplot2::aes(yintercept=yint), linetype=2)
+      #p <- p + ggplot2::geom_hline(data=data.frame(yint=trp2, piname="SB/SBF=0"), ggplot2::aes(yintercept=yint), linetype=2)
+      p <- p + ggplot2::geom_hline(data=data.frame(yint=trp3, piname="SB/SBF=0"), ggplot2::aes(yintercept=yint), linetype=2)
     }
     # Size of labels etc
     p <- p + theme(axis.text=element_text(size=16), axis.title=element_text(size=16), strip.text=element_text(size=16), legend.text=element_text(size=16))
@@ -1242,7 +1271,7 @@ server <- function(input, output, session) {
       hcriters <- input$hcrperfiter
       hcr_points_sub <- subset(hcr_points, iter %in% hcriters)
     }
-    p <- hcr_plot(hcr_choices=hcr_choices, hcr_shape=hcr_shape, hcr_points=hcr_points_sub, lrp=lrp, trp=trp2, add_points=showpoints, add_path=showpaths)
+    p <- hcr_plot(hcr_choices=hcr_choices, hcr_shape=hcr_shape, hcr_points=hcr_points_sub, lrp=lrp, trp=trp3, add_points=showpoints, add_path=showpaths)
     p <- p + ylab("Catch or effort multiplier")
     return(p)
   })
