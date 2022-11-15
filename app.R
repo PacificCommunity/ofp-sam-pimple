@@ -27,16 +27,21 @@ source("plots.R")
 # Load the indicator data for the reference sets - including Kobe and Majuro data
 data_files <- load("data/WCPFC_2022_reference_results.Rdata")
 
-#--------------------------------------------------------------------------------------------------
+# Which HCRs do we want to show?
+#hcrrefs <- sort(unique(periodqs$hcrref))
+#hcrnames <- sort(unique(periodqs$hcrname))
+# Not the Brian variants
+hcrrefs <- unique(periodqs$hcrref)[1:5]
+hcrnames <- unique(periodqs$hcrname)[1:5]
 
-# Additional fixes
-
-# Need to add "SKJ" to SKJ HCR names to differentiate from BET MP
-skj_hcr_names <- unique(periodqs[,c("msectrl", "hcrname", "hcrref")])
-newnames <- paste("SKJ", skj_hcr_names$hcrref)
-newlevels <- paste("SKJ", levels(skj_hcr_names$hcrref))
-skj_hcr_names[, skjhcrref := .(factor(newnames, levels=newlevels))]
-setnames(skj_hcr_names, old="msectrl", new="Z")
+# Only keep HCRs we want
+periodqs <- periodqs[hcrref %in% hcrrefs]
+worms <- worms[hcrref %in% hcrrefs]
+yearqs <- yearqs[hcrref %in% hcrrefs]
+hcr_shape <- hcr_shape[hcrref %in% hcrrefs]
+hcr_points <- hcr_points[hcrref %in% hcrrefs]
+scaler <- scaler[hcrref %in% hcrrefs]
+scaler_diff <- scaler[hcrref %in% hcrrefs]
 
 #--------------------------------------------------------------------------------------------------
 
@@ -201,6 +206,7 @@ ui <- fluidPage(id="top",
       # Only for the main Compare MPs tab, the MPs tab and SOME of the explorePIs tabs
       conditionalPanel(condition="input.nvp == 'compareMPs' || (input.nvp == 'explorePIs' && (input.pitab == 'pi3' || input.pitab == 'pi6' || input.pitab == 'vulnb' || input.pitab == 'relcpuepl')) || input.nvp == 'mps' || input.nvp == 'mixpis'",
         checkboxGroupInput(inputId = "hcrchoice", label="SKJ HCR selection", selected = unique(periodqs$hcrref), choiceNames = as.character(unique(periodqs$hcrname)), choiceValues = unique(periodqs$hcrref))
+        #checkboxGroupInput(inputId = "hcrchoice", label="SKJ HCR selection", selected = hcrrefs, choiceNames = hcrnames, choiceValues = hcrrefs)
       ),
       # PI choice - only shown in the compare PIs tab
       conditionalPanel(condition="input.nvp == 'compareMPs'",
@@ -1080,10 +1086,12 @@ server <- function(input, output, session) {
       return()
     }
     
-    all_hcr_names <- unique(hcr_tab$hcr_ref)
+    hcr_tab <- hcr_tab[hcr_tab$hcr_ref %in% hcr_choices,]
+    
+    #all_hcr_names <- unique(hcr_tab$hcr_ref)
+    all_hcr_names <- unique(periodqs$hcrref) # Get from periodqs because we may have subset outs we don't want
     hcr_cols <- get_hcr_colours(hcr_names=all_hcr_names, chosen_hcr_names=hcr_choices)
     
-    hcr_tab <- hcr_tab[hcr_tab$hcr_ref %in% hcr_choices,]
     # Syntax to not show a column is horrible. But cannot drop column as needed to colour the rows
     hcr_tabDT <- datatable(hcr_tab,
                    options=list(
