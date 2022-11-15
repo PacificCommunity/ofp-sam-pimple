@@ -24,16 +24,8 @@ library(DT)
 source("funcs.R")
 source("plots.R")
 
-# Load the indicator data - including Kobe and Majuro data
-data_files <- load("data/WCPFC_2022_results.Rdata")
-
-# Mixed fishery data
-# Needs to be redone
-#mix_data_files <- load("data/mf_indicator_data.Rdata")
-# Chop off impact data
-#mixpiqs <- mixpiqs[pi != "impact"]
-#mixpi_periodqs <- mixpi_periodqs[pi != "impact"]
-
+# Load the indicator data for the reference sets - including Kobe and Majuro data
+data_files <- load("data/WCPFC_2022_reference_results.Rdata")
 
 #--------------------------------------------------------------------------------------------------
 
@@ -46,21 +38,7 @@ newlevels <- paste("SKJ", levels(skj_hcr_names$hcrref))
 skj_hcr_names[, skjhcrref := .(factor(newnames, levels=newlevels))]
 setnames(skj_hcr_names, old="msectrl", new="Z")
 
-#mixpi_periodqs <- merge(mixpi_periodqs, skj_hcr_names, by="Z")
-#mixpiqs <- merge(mixpiqs, skj_hcr_names, by="Z")
-
-# Not showing impact plots yet
-# Impact scenario names
-#impact_names <- data.frame(impact_scenario_name = c("BET MP", "SKJ MP", "SPA MP"),
-#                           impact_scenario = c("BET_MP", "SKJ_MP", "SPA_MP"))
-#mixpi_periodqs <- merge(mixpi_periodqs, impact_names, all=TRUE, by="impact_scenario")
-#mixpiqs <- merge(mixpiqs, impact_names, all=TRUE, by="impact_scenario")
-
-# Order by skjhcrref
-#mixpi_periodqs <- mixpi_periodqs[order(mixpi_periodqs$skjhcrref),]
-#mixpiqs <- mixpiqs[order(mixpiqs$skjhcrref),]
-
-#------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
 
 # Check catch stability - why are minimums same as median for medium and long term
 # Because negative - because the minimum stability is based on 5% but whisker is 2.5%
@@ -77,7 +55,7 @@ last_plot_year <- max(long_term)
 first_plot_year <- 1990
 
 # Quantiles - extract calculated percentiles from data object
-qnames <- colnames(periodqs)[!(colnames(periodqs) %in% c("area", "msectrl", "metric", "period", "pi", "piname", "hcrname", "hcrref", "area_name", "X50."))]
+qnames <- colnames(periodqs)[!(colnames(periodqs) %in% c("area", "msectrl", "metric", "period", "pi", "piname", "hcrname", "hcrref", "area_name", "X50.", "set"))]
 qnames <- substring(qnames,2) # Drop the X
 qnames <- substring(qnames,1,nchar(qnames)-1)
 quantiles <- as.numeric(qnames)
@@ -105,38 +83,35 @@ trp3 <- 0.41 # Les' two-eyed TRP
 # Some iters dropped due to errors
 common_iters <- hcr_points[, unique(iter)]
 
-# Sort everything by HCR - should already have been done in the PI preparation script
-setorder(periodqs, hcrref)
-setorder(yearqs, hcrref)
-setorder(worms, hcrref)
-setorder(hcr_points, hcrref)
-setorder(hcr_shape, hcrref)
+# Should already be done in the PI calculation script
 majuro_summary_tabs <- lapply(majuro_summary_tabs, function(x) x[order(x$HCR),])
 kobe_summary_tabs <- lapply(kobe_summary_tabs, function(x) x[order(x$HCR),])
 
-# Fix names of PI selector - used for selecting desired PIs - need to remove PS note
-# piselector is the one used in the main comparison tab
+# Get names for the main PI selector for Compare Performance tab
 # i.e. not used in the more detailed analysis
-pis_list <- sort(unique(periodqs[,piname]))
-# Drop the variability ones (they point the wrong way and are alternatives to the stability indicators)
-pis_list <- pis_list[!grepl("variability", pis_list)]
-# Also drop SB, SBSBF0latest, the Proximity 0.5 one until we fix the TRP selector, only look at relative catches. Drop Relative CPUE for P&L, only want PS for now.
-pis_list <- pis_list[!(pis_list %in% c("SB",
-                                       "SB/SBF=0latest",
-                                       "SB/SBF=0 relative to 2012",
-                                       "Vuln. biomass",
-                                       "PI 8: Proximity to SB/SBF=0 (0.5)",
-                                       "PI 8: Proximity to SB/SBF=0 (2012)",
-                                       "PI 3: Catch", "PI 4: Relative P&L CPUE"))] 
+#unique(periodqs$piname)
+pis_list <- c("PI 1: Prob. above LRP",
+              "PI 3: Catch\n(relative to 2013-2015)",
+              "PI 4: P&L CPUE\n(relative to 2001-2004)",
+              "PI 4: PS CPUE\n(relative to 2012)",
+              "PI 6: Catch stability",
+              "PI 7: Effort stability\n(PS in areas 6,7,8 only)",
+              "PI 8: Proximity to SB/SBF=0 (target)",
+              "Effort\n(relative to reference period)",
+              "SB/SBF=0",
+              "SB/SBF=0 relative to target")
 piselector <- as.list(pis_list)
+# Cut off second line if exists for display
 pis_text <- unlist(lapply(strsplit(pis_list,"\n"),'[',1))
 names(piselector) <- pis_text
 
-# Not showing mixed fishery catches yet
-#betfisheryselector <- unique(mixpiqs$fishery_name)
-#betfisheryselector <-  betfisheryselector[!is.na(betfisheryselector)]
-#betfisheryselector <- as.list(betfisheryselector)
-#names(betfisheryselector) <-  unlist(betfisheryselector)
+## Make a factor of pinmaes with relative effort last
+#allpinames <- sort(unique(periodqs$piname))
+#where <- which(allpinames=="Effort relative to reference period")
+#allpinames[where:(length(allpinames)-1)] <- allpinames[(where+1):length(allpinames)]
+#allpinames[length(allpinames)] <- "Effort relative to reference period"
+## Reorder piname in periodqs
+##periodqs$piname <- factor(periodqs$piname, levels=allpinames)
 
 # -------------------------------------------
 # General settings for app
@@ -155,7 +130,7 @@ shorttext <- paste(short, collapse="-")
 mediumtext <- paste(medium, collapse="-")
 longtext <- paste(long, collapse="-")
 yearrangetext <- paste("Short-term is: ", shorttext, ", medium-term is: ", mediumtext, " and long-term is: ", longtext,".",sep="")
-pi47text <- "Note that PIs 4 and 7 are for the purse seines in model areas 2, 3 and 5 only (excluding the associated purse seines in area 5.)"
+pi47text <- "Note that PIs 7 and 'effort relative to reference period' are for fisheries managed through effort limits only, e.g. pole and line fisheries and purse seine fisheries."
 pi36text <- "The grouping for PIs 3 and 6 can be selected with the drop down menu on the left."
 biotext <- "PIs 1, 8 and SB/SBF=0 are calculated over all model areas."
 relcatchtext <- "Note that the catches are relative to the average catch in that area grouping in the years 2013-2015."
@@ -163,11 +138,11 @@ barchartplottext <- "The height of each bar shows the median expected value. Not
 boxplottext <- paste0("For box plots the box contains the ", inner_percentiles[2] - inner_percentiles[1],"th percentile, the whiskers show the ", outer_percentiles[2] - outer_percentiles[1], "th percentile and the horizontal line is the median. The wider the range, the less certain we are about the expected value.")
 tabletext <- paste0("The tables show the median indicator values in each time period. The values inside the parentheses are the ", outer_percentiles[2] - outer_percentiles[1] ,"th percentile range.")
 timeseriesplottext <- paste0("The outer ribbons show the ", outer_percentiles[2] - outer_percentiles[1], "th percentile range and the inner ribbons show the ", inner_percentiles[2] - inner_percentiles[1], "th percentile range. The dashed, black line is the median value.")
-timeseriesplottext2 <-  "The dashed vertical lines show, from left, the start of the MSE evaluation with three years of 2012 assumptions, the start of the HCR operating with the short-, medium- and long-term periods."
+timeseriesplottext2 <-  "The dashed vertical lines show, from left, the start of the MSE evaluation with transient period assumptions, the start of the HCR operating with the short-, medium- and long-term periods."
 stabtext <- "Note that the stability can only be compared between time periods, not between areas or area groups, i.e. it is the relative stability in that area."
-sbsbf02012text <- "On the SB/SBF=0 plot, the lower dashed line is the Limit Reference Point and the upper dashed line is the mean SB/SBF=0 in 2012."
+sbsbf02012text <- "On the SB/SBF=0 plot, the lower dashed line is the Limit Reference Point and the upper dashed line is the target SB/SBF=0."
 
-#----------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
 
 # Fake place holder app
 #ui <- fluidPage(
@@ -266,11 +241,6 @@ ui <- fluidPage(id="top",
         radioButtons(inputId = "majurokobe", label="Majuro or Kobe plot", selected = "Majuro", choiceNames = c("Majuro", "Kobe"), choiceValues = c("Majuro", "Kobe"))
       ),
       
-      # The BET MP and BET / YFT stock options
-      #conditionalPanel(condition="input.nvp == 'mixpis'",
-      #  radioButtons(inputId = "betoryft", label="BET or YFT", selected = "BET", choiceNames = c("BET", "YFT"), choiceValues = c("BET", "YFT")),
-      #  checkboxGroupInput(inputId = "betmpchoice", label="TLL scenario", selected = unique(mixpi_periodqs$tll_mult), choiceNames = as.character(unique(mixpi_periodqs$tll_ass_name)), choiceValues = unique(mixpi_periodqs$tll_mult))),
-        
       conditionalPanel(condition = "input.nvp == 'mixpis' && (input.mixpisid == 'mixss' || input.mixpisid == 'mixplrp' || input.mixpisid == 'mixcatch')",
         radioButtons(inputId = "facetskjorbet", label="Panels by SKJ HCR or BET MP", selected = "betmp", choiceNames = c("BET MP", "SKJ HCR"), choiceValues = c("betmp", "skjhcr"))),
       
@@ -291,11 +261,6 @@ ui <- fluidPage(id="top",
       conditionalPanel(condition="input.nvp == 'explorePIs' && input.pitab== 'pi6'",
         radioButtons(inputId = "stabvarchoice", label="Stability or variability",choices = list("Stability" = "stability", "Variability" ="variability"), selected="stability")
       ),
-      # BET or YFT selector
-      #conditionalPanel(condition="input.nvp == 'mixpis' && input.mixpisid == 'mixcatch'",
-      #  checkboxGroupInput(inputId = "betyftfisherychoice", label="BET / YFT fishery",
-      #                     choices = betfisheryselector, selected="All fisheries")
-      #)
     ), # End of sidebarPanel
     
     #---------------------------------------------
@@ -448,17 +413,17 @@ ui <- fluidPage(id="top",
                 )
               )
             ), # End of vulnerable biomass
-            # *** Pole and line CPUE
-            # Separate panels for areas 1 - 4
-            tabPanel("Relative CPUE of pole and line fisheries", value="relcpuepl",
-              column(12, 
-                p("The CPUE of the pole and line fisheries in model areas 1 - 4 relative to the period 2001-2004."),
-                fluidRow(
-                  plotOutput("plot_relcpuepl",  height="800px"),
-                  p(yearrangetext)
-                )
-              )
-            ), # End of pole and line CPUE
+            ## *** Pole and line CPUE
+            ## Separate panels for areas 1 - 4
+            #tabPanel("Relative CPUE of pole and line fisheries", value="relcpuepl",
+            #  column(12, 
+            #    p("The CPUE of the pole and line fisheries in model areas 1 - 4 relative to the period 2001-2004."),
+            #    fluidRow(
+            #      plotOutput("plot_relcpuepl",  height="800px"),
+            #      p(yearrangetext)
+            #    )
+            #  )
+            #), # End of pole and line CPUE
            
             
             # *** Kobe and Majuro
@@ -481,43 +446,6 @@ ui <- fluidPage(id="top",
           )                                
         ), # End of Other SKJ indicators tab                                
         
-        ##------------------------------------------
-        ## Mixed fishery indicators 
-        ##------------------------------------------
-        #tabPanel(title="Mixed fishery indicators", value="mixpis",
-        #  tabsetPanel(id="mixpisid",
-        #    # Information on the mixed fishery indicators
-        #    tabPanel("Mixed fishery indicators information", value="mixinfo",
-        #      includeMarkdown("introtext/mix_introduction.md")
-        #    ), # End of mixed fishery information tab
-        #    
-        #    tabPanel("Stock status", value="mixss",
-        #      column(12, fluidRow(
-        #        h1(textOutput("print_ss_betoryft")), 
-        #        #plotOutput("plot_box_mixpis_sbsbf0", height="auto")
-        #        plotOutput("plot_mixpis_sbsbf0", height="auto")
-        #        #plotOutput("plot_mixpis_sbsbf0", height="auto")
-        #      ))
-        #    ), # End of mixed fishery stock status tabpanel
-        #    tabPanel("Prob. > LRP",value="mixplrp",
-        #      column(12, fluidRow(
-        #        h1(textOutput("print_problrp_betoryft")), 
-        #        plotOutput("plot_box_mixpis_problrp", height="auto")
-        #      ))
-        #    ) # End of prob > LRP mixed fishery panel
-        #    # Don't show catches and impact yet
-        #    #tabPanel("Catch",value="mixcatch",
-        #    #         column(12, fluidRow(
-        #    #           plotOutput("plot_box_mixpis_catch", height="auto") 
-        #    #         ))
-        #    #), # End of catch mixed fishery panel
-        #    #tabPanel("Impact",value="miximpact",
-        #    #         column(12, fluidRow(
-        #    #           plotOutput("plot_mixpis_impact", height="auto") 
-        #    #         ))
-        #    #), # End of impact panel
-        #  ) # End of mixed fishery indicators tabsetPanel
-        #), # End of mixed fishery indicators tab
         #------------------------------------------
         # The Management Procedures
         #------------------------------------------
@@ -534,7 +462,7 @@ ui <- fluidPage(id="top",
           fluidRow(
               p("Currently all the candidate skipjack management procedures have the same estimation method (an 8-region MULTIFAN-CL stock assessment model)."),
               p("This means that we are only comparing the performance of the HCRs. However, this may not always be the case."),
-              p("The current HCRs use a value of estimated depletion (SB/SBF=0) to set a multiplier. This multipler is applied to the catch or effort in 2012 for each fishery to set a new catch or effort limit for the next time period."),
+              p("The current HCRs use a value of estimated depletion (SB/SBF=0) to set a multiplier. This multipiler is applied to the catch or effort the reference period (see Introduction tab) for each fishery to set a new catch or effort limit for the next time period."),
             column(6, h3("HCR shapes"),
                       plotOutput("plot_hcrshape",  height="600px")),
             column(6, h3("HCR parameters"),
@@ -652,292 +580,9 @@ server <- function(input, output, session) {
     p <- p + theme(axis.text=element_text(size=16), axis.title=element_text(size=16), strip.text=element_text(size=16), legend.text=element_text(size=16))
     return(p)
   })
-  
-  #---------------------------------------------------------------------------------
-  # Mixed fishery plots
-  
-  output$plot_mixpis_impact <- renderPlot({
-    
-    hcr_choices <- input$hcrchoice
-    betmp_choices <- input$betmpchoice
-    stock_choice <- input$betoryft
-    facetskjorbet <- input$facetskjorbet
-    boxribbon_choice <- input$plotboxorribbon
-    skj_row_or_col <- input$skjhcrcolrow
-      
-    if((length(hcr_choices) < 1) | (length(betmp_choices) < 1)){
-      return()
-    }
-    
-    # Which data set are we using?
-    if(boxribbon_choice == "ribbon"){
-      dat <- mixpiqs
-    } else {
-      dat <- mixpi_periodqs
-    }
-    
-    dat <- subset(dat, area == "All regions" & period != "Rest" & pi == "impact" & stock == stock_choice)
-    dat <- subset(dat, hcrref %in% hcr_choices & tll_mult %in% betmp_choices) 
-    
-    # Make a colour scheme for impact MP - blue SKJ, etc 
-    MPcols <- c("steelblue", "tomato", "forestgreen")
-    names(MPcols) <- c("SKJ MP", "BET MP", "SPA MP")
-    
-    if(boxribbon_choice == "ribbon"){
-      p <- ggplot(dat, aes(x=year))
-      p <- p + geom_area(aes(y=X50., fill=impact_scenario_name))
-      p <- p + theme_bw()
-      p <- p +  xlab("Year")
-    }
-    if(boxribbon_choice == "box"){
-      p <- ggplot(dat, aes_string(x="period"))
-      p <- p + geom_boxplot(aes_string(ymin="X5.", ymax="X95.", lower="X20.", upper="X80.", middle="X50.", fill="impact_scenario_name"), width=0.7, stat="identity")
-      p <- p + xlab("Time period")
-    }
-    if(skj_row_or_col == "row"){
-      p <- p + facet_grid(skjhcrref~tll_ass_name)
-    }
-    if(skj_row_or_col == "column"){
-      p <- p + facet_grid(tll_ass_name~skjhcrref)
-    }
-    p <- p + ylab(paste0("Impact on ", stock_choice, " %"))
-    p <- p + scale_fill_manual(name = "MP", values = MPcols)
-    p <- p + ylim(c(0, 100))
-    p <- p + theme_bw()
-    p <- p + theme(legend.position="top", legend.title=element_blank())
-    
-    text_size <- 14
-    p <- p + theme(axis.text=element_text(size=text_size), axis.title=element_text(size=text_size), strip.text=element_text(size=text_size), legend.text=element_text(size=text_size))
-    
-    return(p)
-    
-  },
-  height = function(){return(900)}
-  )
-  
-  # Catches - complicated
-  output$plot_box_mixpis_catch <- renderPlot({
-      hcr_choices <- input$hcrchoice
-      betmp_choices <- input$betmpchoice
-      stock_choice <- input$betoryft
-      barbox_choice <- input$plotchoicebarbox # median_bar or box
-      facetskjorbet <- input$facetskjorbet
-      fishery_choices <- input$betyftfisherychoice
-      
-      if(length(fishery_choices) < 1 | (length(hcr_choices) < 1) | (length(betmp_choices) < 1)){
-        return()
-      }
-      dat <- subset(mixpi_periodqs, period != "Rest" & pi == "catch" & stock == stock_choice & fishery_name %in% fishery_choices)
-      
-      # SKJ HCR and BET MP colours
-      all_hcr_names <- unique(dat$skjhcrref)
-      all_betmp_names <- unique(dat$tll_ass_name)
-      dat <- dat[dat$hcrref %in% hcr_choices & dat$tll_mult %in% betmp_choices,] 
-      hcr_cols <- get_hcr_colours(hcr_names=all_hcr_names, chosen_hcr_names=unique(dat$skjhcrref))
-      betmp_cols <- get_betmp_colours(mp_names=all_betmp_names, chosen_mp_names=unique(dat$tll_ass_name))
-      
-      if (input$facetskjorbet == "skjhcr"){
-        fillvar <- "tll_ass_name"
-      } else {
-        fillvar <- "skjhcrref"
-      }
-      p <- ggplot(dat, aes(x=period))
-      if (barbox_choice == "box"){
-        p <- p + geom_boxplot(aes_string(ymin="X5.", ymax="X95.", lower="X20.", upper="X80.", middle="X50.", fill=fillvar), stat="identity")
-      }
-      if (barbox_choice == "median_bar"){
-        p <- p + geom_bar(aes_string(y="X50.", fill=fillvar), stat="identity", position="dodge", colour="black", width=0.7)
-      }
-      p <- p + xlab("Time period")
-      if (fillvar == "skjhcrref"){
-        p <- p + scale_fill_manual(values=hcr_cols, name="SKJ HCR")
-        p <- p + facet_grid(fishery_name~tll_ass_name)#, scales="free")
-      }
-      if (fillvar == "tll_ass_name"){
-        p <- p + scale_fill_manual(values=betmp_cols, name="TLL scenario")
-        p <- p + facet_grid(fishery_name~skjhcrref)#, scales="free")
-      }
-      p <- p + theme_bw()
-      p <- p + theme(legend.position="top")#, legend.title=element_blank())
-      p <- p + guides(fill = guide_legend(title.position = "top", title.hjust=0.5))
-      
-      
-      p <- p + ylab(paste(stock_choice, "Catch", sep=" "))
-      #p <- p + ylim(c(0,NA))
-      
-      text_size <- 14
-      p <- p + theme(axis.text=element_text(size=text_size), axis.title=element_text(size=text_size), strip.text=element_text(size=text_size), legend.text=element_text(size=text_size))
-      
-      return(p)
-  }, 
-    height=function(){return(max(height_per_pi * 1.5, height_per_pi * length(input$betyftfisherychoice)))}
-  )
-  
-  output$plot_mixpis_sbsbf0 <- renderPlot({
-    hcr_choices <- input$hcrchoice
-    betmp_choices <- input$betmpchoice
-    stock_choice <- input$betoryft
-    barboxtime_choice <- input$plotchoicebarboxtime # median_bar or box
-    facetskjorbet <- input$facetskjorbet
-    if((length(hcr_choices) < 1) | (length(betmp_choices) < 1)){
-      return()
-    }
-    
-    # Time series plot
-    if(barboxtime_choice == "time"){
-      dat <- subset(mixpiqs, area == "All regions" & pi == "sbsbf0" & stock == stock_choice)
-      # SKJ HCR and BET MP colours
-      all_hcr_names <- unique(dat$skjhcrref)
-      all_betmp_names <- unique(dat$tll_ass_name)
-      dat <- dat[dat$hcrref %in% hcr_choices & dat$tll_mult %in% betmp_choices,] 
-      hcr_cols <- get_hcr_colours(hcr_names=all_hcr_names, chosen_hcr_names=unique(dat$skjhcrref))
-      betmp_cols <- get_betmp_colours(mp_names=all_betmp_names, chosen_mp_names=unique(dat$tll_ass_name))
-    
-      if (facetskjorbet == "skjhcr"){
-        fillvar = "tll_ass_name"
-      } else {
-        fillvar = "skjhcrref"
-      }
-      
-      inner_ynames <- paste0("X", inner_percentiles, ".")
-      outer_ynames <- paste0("X", outer_percentiles, ".")
-      # Chop out NA rows
-      dat <- dat[!is.na(dat$X50.),]
-      # Start the plot
-      p <- ggplot(dat, aes(x=year))
-      # The ribbon - colour by either SKJ or BET MP
-      p <- p + geom_ribbon(aes_string(ymin=outer_ynames[1], ymax=outer_ynames[2], fill=fillvar), alpha=0.5)
-      p <- p + geom_ribbon(aes_string(ymin=inner_ynames[1], ymax=inner_ynames[2], fill=fillvar))
-      # Add median line
-      p <- p + geom_line(aes_string(y="X50.", group=fillvar), colour="black", linetype=2, size=rel(0.5))
-      p <- p + xlab("Year")
-      # Add worms
-      #if (!is.null(wormdat) & show_spaghetti==TRUE){
-      #  wormdat <- subset(wormdat, hcrref %in% hcr_choices)
-      #  wormdat <- wormdat[!is.na(wormdat$value),]
-      #  # Put a black background on the line to help
-      #  p <- p + geom_line(data=wormdat, aes(x=year, y=value, group=wormid), colour="black", linetype=linetype_worm, size=size_worm*1.2)
-      #}
-      # Colours
-      if (fillvar == "skjhcrref"){
-        p <- p + scale_fill_manual(values=hcr_cols, name="SKJ HCR")
-        p <- p + facet_grid(tll_ass_name ~ skjhcrref)#, scales="free")
-      }
-      if (fillvar == "tll_ass_name"){
-        p <- p + scale_fill_manual(values=betmp_cols, name="TLL scenario")
-        p <- p + facet_grid(skjhcrref ~ tll_ass_name)#, scales="free")
-      }
-      # Add vertical line at start of MSE
-      p <- p + geom_vline(aes(xintercept=min(short_term)-3), linetype=2)
-      # Time period lines?
-      p <- p + geom_vline(aes(xintercept=min(short_term)), linetype=2)
-      p <- p + geom_vline(aes(xintercept=min(medium_term)), linetype=2)
-      p <- p + geom_vline(aes(xintercept=min(long_term)), linetype=2)
-    
-      p <- p + theme_bw()
-      p <- p + theme(legend.position="top", legend.title=element_blank())
-      #p <- p + ylim(c(0,1))
-      p <- p + ylab(paste(stock_choice, "SB/SBF=0", sep=" "))
-      # Add 0.2 line
-      p <- p + geom_hline(aes(yintercept=0.2), linetype=2)
-    }
-    # Bar or box plot
-    else{
-      dat <- subset(mixpi_periodqs, period != "Rest" & area == "All regions" & pi == "sbsbf0" & stock == stock_choice)
-      # Call plot function here
-      p <- mixpis_barbox_biol_plot(dat = dat, hcr_choices = hcr_choices,
-                                   betmp_choices = betmp_choices,
-                                   barbox_choice = barboxtime_choice,
-                                   stock_choice = stock_choice,
-                                   facetskjorbet = facetskjorbet,
-                                   no_mixfacets_row = no_mixfacets_row
-                                   )
-      #p <- p + ylim(c(0,1))
-      p <- p + ylab(paste(stock_choice, "SB/SBF=0", sep=" "))
-      # Add 0.2 line
-      p <- p + geom_hline(aes(yintercept=0.2), linetype=2)
-    }
-    return(p)
-    
-    
-  }, 
-    height= function(){
-      otherbit <- height_per_pi
-      if(input$plotchoicebarboxtime != "time"){
-        if(input$facetskjorbet == "skjhcr"){
-          otherbit <- height_per_pi * ceiling(length(input$hcrchoice) / no_mixfacets_row)
-        }
-        if(input$facetskjorbet == "betmp"){
-          otherbit <- height_per_pi * ceiling(length(input$betmpchoice) / no_mixfacets_row)
-        }
-      } else {
-        # This is really weird...
-        # When SKJ HCRs is in rows, the height is much bigger...
-        if(input$facetskjorbet == "skjhcr"){
-          otherbit <- height_per_pi * 0.5 * length(input$hcrchoice)
-        }
-        if(input$facetskjorbet == "betmp"){
-          otherbit <- height_per_pi * length(input$betmpchoice)
-        }
-      }
-      return(min(max(height_per_pi*1.5, otherbit), 1000))
-    }
-  )
-
-  
-  output$plot_box_mixpis_problrp <- renderPlot({
-      hcr_choices <- input$hcrchoice
-      betmp_choices <- input$betmpchoice
-      stock_choice <- input$betoryft
-      barbox_choice <- "median_bar"
-      facetskjorbet <- input$facetskjorbet
-      if((length(hcr_choices) < 1) | (length(betmp_choices) < 1)){
-        return()
-      }
-      dat <- subset(mixpi_periodqs, period != "Rest" & area == "All regions" & pi == "prob_lrp" & stock == stock_choice)
-      
-      # Call plot function here
-      p <- mixpis_barbox_biol_plot(dat = dat, hcr_choices = hcr_choices,
-                                   betmp_choices = betmp_choices,
-                                   barbox_choice = barbox_choice,
-                                   stock_choice = stock_choice,
-                                   facetskjorbet = facetskjorbet,
-                                   no_mixfacets_row = no_mixfacets_row)
-      p <- p + ylim(c(0,1)) + ylab(paste(stock_choice, "Prob. > LRP", sep=" "))
-      p <- p + geom_hline(aes(yintercept=0.8), linetype=2)
-      return(p)
-  }, 
-    height= function(){
-    otherbit <- height_per_pi
-    if(input$facetskjorbet == "skjhcr"){
-      otherbit <- height_per_pi * ceiling(length(input$hcrchoice) / no_mixfacets_row)
-    }
-    if(input$facetskjorbet == "betmp"){
-      otherbit <- height_per_pi * ceiling(length(input$betmpchoice) / no_mixfacets_row)
-    }
-    return(max(height_per_pi*1.5, otherbit))
-    }
-  )
-  
-  print_stock <- function(stock){
-    if(stock == "BET"){
-      output <- "Bigeye"
-    } else {
-      output <- "Yellowfin"
-    }
-    return(output)
-  }
-  
-  output$print_ss_betoryft <- renderText({
-    print_stock(input$betoryft)
-  })
-  output$print_problrp_betoryft <- renderText({
-    print_stock(input$betoryft)
-  })
 
   #-------------------------------------------------------------------
-  # Comparison plots
-  
+  # Main comparison plots
 
   # Bar or box plot - facetting on PI
   plot_barbox_comparehcr <- function(plot_type="median_bar"){
@@ -947,20 +592,32 @@ server <- function(input, output, session) {
       if((length(hcr_choices) < 1) | (length(pi_choices) < 1)){
         return()
       }
-      # There are 8 panels
-      # pi1, pi3, pi4, pi6, pi7, pi8, sbsbf0, sbsbf0 relative to TRP
+      # There are a maximum of length(pis_list) panels (currently 10)
+      # pi1, pi3, pi4 (x2), pi6, pi7, pi8, relative effort, sbsbf0, sbsbf0 relative to TRP
+      # (see pis_list above)
       # They have different groupings based on metric and area
       # pi1: metric = SBSBF0, area = 1-8, all
       # pi3: area = 1-8, total, ps678, pl_jp
-      # pi4: area = ps678x
+      # pi4: area = ps678x, 1 - 4, pl_jp
       # pi6: area = as pi3 and metric catch stability / relative catch stability (not in piname so need additional subset)
       # pi7: area = ps678x
       # pi8: area = all
       # sbsbsf0: area = 1-8, all
       catch_area_choice <- input$catchareachoice
-      # Need to be careful as PI 4 has five areas - PL 1- 4 and ps678x
-      dat <- subset(periodqs, period != "Rest" & area %in% c("all", catch_area_choice, "ps678x") & piname %in% pi_choices & metric != "catch stability")
-
+      
+      # Subset out the data you want to plot based on user options
+      # Need to be careful as PI 4 has six areas - PL 1-4 (for indiv P&L) pl_jp and ps678x
+      # Gets tricky with areas for PI 3 and 4
+      # For 3 we want one of pl_jp, ps678 or total - given by catchareachoice
+      # For 4 we want both of pl_jp and ps678x - pl_jp is the pain
+      dat <- periodqs[period != "Rest" &
+             metric != "catch stability" &
+             piname %in% pi_choices &
+             area %in% c("all", catch_area_choice, "pl_jp", "ps678x") &
+             # Drop areas not in catch_area_choice from PI 3 and 6 only  (to deal with pl_jp)
+             !(piname == "PI 3: Catch\n(relative to 2013-2015)" & !(area %in% catch_area_choice)) &
+             !(piname == "PI 6: Catch stability" & !(area %in% catch_area_choice))]
+      
       p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_type, quantiles=quantiles)
       # Do we fix axis at 0? Probably
       p <- p + ggplot2::ylim(0,NA)
@@ -972,17 +629,31 @@ server <- function(input, output, session) {
       # Only if SB/SBF=0 is in dat
       if ("SB/SBF=0" %in% pi_choices){
         p <- p + ggplot2::geom_hline(data=data.frame(yint=lrp, piname="SB/SBF=0"), ggplot2::aes(yintercept=yint), linetype=2)
-        #p <- p + ggplot2::geom_hline(data=data.frame(yint=trp2, piname="SB/SBF=0"), ggplot2::aes(yintercept=yint), linetype=2)
+        p <- p + ggplot2::geom_hline(data=data.frame(yint=trp3, piname="SB/SBF=0"), ggplot2::aes(yintercept=yint), linetype=2)
       }
       # Add 1.0 line for relative to TRP plot
-      if ("SB/SBF=0 relative to 2012" %in% pi_choices){
-        p <- p + ggplot2::geom_hline(data=data.frame(yint=1.0, piname="SB/SBF=0 relative to 2012"), ggplot2::aes(yintercept=yint), linetype=2)
+      if ("SB/SBF=0 relative to target" %in% pi_choices){
+        p <- p + ggplot2::geom_hline(data=data.frame(yint=1.0, piname="SB/SBF=0 relative to target"), ggplot2::aes(yintercept=yint), linetype=2)
       }
       # Must have a probability of at least 0.8 above LRP
       if ("PI 1: Prob. above LRP" %in% pi_choices){
         p <- p + ggplot2::geom_hline(data=data.frame(yint=0.8,piname="PI 1: Prob. above LRP"), ggplot2::aes(yintercept=yint), linetype=2)
       }
-      p <- p + ggplot2::facet_wrap(~piname, scales="free", ncol=no_facets_row)
+      # Add 1.0 line for relative effort
+      if ("Effort\n(relative to reference period)" %in% pi_choices){
+        p <- p + ggplot2::geom_hline(data=data.frame(yint=1.0, piname="Effort\n(relative to reference period)"), ggplot2::aes(yintercept=yint), linetype=2)
+      }
+      # Add 1.0 line for relative CPUE PL
+      if ("PI 4: P&L CPUE\n(relative to 2001-2004)" %in% pi_choices){
+        p <- p + ggplot2::geom_hline(data=data.frame(yint=1.0, piname="PI 4: P&L CPUE\n(relative to 2001-2004)"), ggplot2::aes(yintercept=yint), linetype=2)
+      }
+      # Add 1.0 line for relative CPUE PL
+      if ("PI 4: PS CPUE\n(relative to 2012)" %in% pi_choices){
+        p <- p + ggplot2::geom_hline(data=data.frame(yint=1.0, piname="PI 4: PS CPUE\n(relative to 2012)"), ggplot2::aes(yintercept=yint), linetype=2)
+      }
+      #p <- p + ggplot2::facet_wrap(~piname, scales="free", ncol=no_facets_row)
+      # Why do I have to make the wrap a factor when it already is?
+      p <- p + ggplot2::facet_wrap(~factor(piname, levels=pis_list), scales="free", ncol=no_facets_row)
       return(p)
     },
       height=function(){
@@ -996,7 +667,10 @@ server <- function(input, output, session) {
   output$plot_box_comparehcr <- plot_barbox_comparehcr(plot_type="box")
 
   # Time series comparisons - just three plots
-  pinames_ts <- c("SB/SBF=0", "PI 3: Catch (rel. to 2013-2015)" ,"PI 4: Relative PS CPUE")
+  #pinames_ts <- c("SB/SBF=0", "PI 3: Catch (rel. to 2013-2015)" ,"PI 4: Relative PS CPUE")
+  pinames_ts <- c("SB/SBF=0", "PI 3: Catch\n(relative to 2013-2015)", "PI 4: P&L CPUE\n(relative to 2001-2004)" ,"PI 4: PS CPUE\n(relative to 2012)")#, "Effort\n(relative to reference period)")
+  
+  
   # pis to plot time series of
   
   # Try facetting rather than plotting one on top of the other
@@ -1012,12 +686,28 @@ server <- function(input, output, session) {
     }
 
     catch_area_choice <- input$catchareachoice
-    dat <- subset(yearqs, area %in% c("all", catch_area_choice, "ps678x") & piname %in% pi_choices & metric != "catch stability")
-    wormdat <- subset(worms, area %in% c("all", catch_area_choice, "ps678x") & piname %in% pi_choices & metric != "catch stability" & iter %in% wormiters)
+    
+    #dat <- subset(yearqs, area %in% c("all", catch_area_choice, "ps678x") & piname %in% pi_choices & metric != "catch stability")
+    #wormdat <- subset(worms, area %in% c("all", catch_area_choice, "ps678x") & piname %in% pi_choices & metric != "catch stability" & iter %in% wormiters)
+    
+    
+    dat <- yearqs[metric != "catch stability" &
+            piname %in% pi_choices &
+            area %in% c("all", catch_area_choice, "pl_jp", "ps678x") &
+            # Drop areas not in catch_area_choice from PI 3 and 6 only  (to deal with pl_jp)
+            !(piname == "PI 3: Catch\n(relative to 2013-2015)" & !(area %in% catch_area_choice)) &
+            !(piname == "PI 6: Catch stability" & !(area %in% catch_area_choice))]
+      
+    wormdat <- worms[metric != "catch stability" &
+            piname %in% pi_choices &
+            area %in% c("all", catch_area_choice, "pl_jp", "ps678x") &
+            # Drop areas not in catch_area_choice from PI 3 and 6 only  (to deal with pl_jp)
+            !(piname == "PI 3: Catch\n(relative to 2013-2015)" & !(area %in% catch_area_choice)) &
+            !(piname == "PI 6: Catch stability" & !(area %in% catch_area_choice))]
 
     p <- time_series_plot(dat=dat, hcr_choices=hcr_choices, wormdat=wormdat, last_plot_year=last_plot_year, short_term = short_term, medium_term = medium_term, long_term = long_term, show_spaghetti=show_spaghetti, outer_percentile_range = outer_percentiles, inner_percentile_range = inner_percentiles)
     # Facet by PI
-    p <- p + facet_grid(piname ~ hcrref, scales="free")#, ncol=1)
+    p <- p + facet_grid(factor(piname, levels=pis_list) ~ hcrref, scales="free")#, ncol=1)
     #p <- p + ylab("Catch")
     p <- p + ggplot2::ylim(c(0,NA))
     # Axes limits set here or have tight?
@@ -1030,6 +720,16 @@ server <- function(input, output, session) {
       #p <- p + ggplot2::geom_hline(data=data.frame(yint=trp2, piname="SB/SBF=0"), ggplot2::aes(yintercept=yint), linetype=2)
       p <- p + ggplot2::geom_hline(data=data.frame(yint=trp3, piname="SB/SBF=0"), ggplot2::aes(yintercept=yint), linetype=2)
     }
+      # Add 1.0 line for relative CPUE PL
+      if ("PI 4: P&L CPUE\n(relative to 2001-2004)" %in% pi_choices){
+        p <- p + ggplot2::geom_hline(data=data.frame(yint=1.0, piname="PI 4: P&L CPUE\n(relative to 2001-2004)"), ggplot2::aes(yintercept=yint), linetype=2)
+      }
+      # Add 1.0 line for relative CPUE PL
+      if ("PI 4: PS CPUE\n(relative to 2012)" %in% pi_choices){
+        p <- p + ggplot2::geom_hline(data=data.frame(yint=1.0, piname="PI 4: PS CPUE\n(relative to 2012)"), ggplot2::aes(yintercept=yint), linetype=2)
+      }
+    
+    
     # Size of labels etc
     p <- p + theme(axis.text=element_text(size=16), axis.title=element_text(size=16), strip.text=element_text(size=16), legend.text=element_text(size=16))
     return(p)
@@ -1155,7 +855,6 @@ server <- function(input, output, session) {
     return(p)
   })
   
-  # For exploring the vulnerable biomass to pole and line in different regions
   output$plot_relcpuepl <- renderPlot({
     # If no HCRs chosen just leave
     hcr_choices <- input$hcrchoice
@@ -1167,7 +866,8 @@ server <- function(input, output, session) {
     ylabel <- "Relative CPUE of pole and line fisheries"
 
     if (plot_choice %in% c("median_bar","box")){
-      dat <- subset(periodqs, period != "Rest" & pi=="pi4" & piname =="PI 4: Relative P&L CPUE") 
+      #dat <- subset(periodqs, period != "Rest" & pi=="pi4" & piname =="PI 4: Relative P&L CPUE") 
+      dat <- subset(periodqs, period != "Rest" & pi=="pi4" & piname =="PI 4: P&L CPUE\n(relative to 2001-2004)") 
       p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type=plot_choice, quantiles=quantiles)
       p <- p + ylab(ylabel)
       p <- p + ylim(c(0,NA))
@@ -1176,8 +876,10 @@ server <- function(input, output, session) {
 
     if(plot_choice == "time"){
       show_spaghetti <- input$showspag
-      dat <- subset(yearqs, pi=="pi4" & piname=="PI 4: Relative P&L CPUE") 
-      wormdat <- subset(worms, pi=="pi4" & piname=="PI 4: Relative P&L CPUE" & iter %in% wormiters) 
+      #dat <- subset(yearqs, pi=="pi4" & piname=="PI 4: Relative P&L CPUE") 
+      dat <- subset(yearqs, pi=="pi4" & piname=="PI 4: P&L CPUE (relative to\n2001-2004)") 
+      #wormdat <- subset(worms, pi=="pi4" & piname=="PI 4: Relative P&L CPUE" & iter %in% wormiters) 
+      wormdat <- subset(worms, pi=="pi4" & piname=="PI 4: P&L CPUE (relative to\n2001-2004)" & iter %in% wormiters) 
       p <- time_series_plot(dat=dat, hcr_choices=hcr_choices, wormdat=wormdat, last_plot_year=last_plot_year, short_term = short_term, medium_term = medium_term, long_term = long_term, show_spaghetti=show_spaghetti, outer_percentile_range = outer_percentiles, inner_percentile_range = inner_percentiles)
       p <- p + facet_grid(area_name ~ hcrref, scales="free")#, ncol=1)
       p <- p + ylab(ylabel)

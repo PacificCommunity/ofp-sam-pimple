@@ -1,10 +1,5 @@
 # Performance Indicators and Management Procedures Explorer (PIMPLE)
 
-PIMPLE reference sheets are available (right-click to open in a new tab or save-as):
-
-* <a href="PIposter.pdf" target="_blank">Performance indicators for skipjack</a>
-* <a href="PIMPLEposter2sided.pdf" target="_blank">PIMPLE reference</a>
-
 ## What is PIMPLE?
 
 PIMPLE is a tool for exploring and comparing the performance of alternative candidate management procedures (MPs) for WCPO skipjack.
@@ -36,5 +31,7 @@ This tab allows you to view the indicators using different plot types (see below
 To aid investigation it is possible to select the indicators that are of most interest, and deselect those that are of less interest.
 Similarly, it is possible to select and deselect HCRs to focus attention on a smaller subset.
 
-Other performance indicators can be found under the **Other indicators** tab at the top.
+Other performance indicators can be found under the **Other SKJ indicators** tab at the top.
 This allows you to see some of the PI in more detail, for example viewing the catch based indicators by model area.
+
+The shapes of the candidate HCRs, and their output over time, can be seen in the **SKJ management procedures** tab.
