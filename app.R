@@ -25,7 +25,8 @@ source("funcs.R")
 source("plots.R")
 
 # Load the indicator data for the reference sets - including Kobe and Majuro data
-data_files <- load("data/WCPFC_2022_reference_results.Rdata")
+ref_files <- load("data/WCPFC_2022_reference_results.Rdata")
+rob_files <- load("data/WCPFC_2022_robustness_results.Rdata")
 
 # Which HCRs do we want to show?
 #hcrrefs <- sort(unique(periodqs$hcrref))
@@ -204,17 +205,17 @@ ui <- fluidPage(id="top",
       )), # End of about condition
       # HCR selection - can select multiples
       # Only for the main Compare MPs tab, the MPs tab and SOME of the explorePIs tabs
-      conditionalPanel(condition="input.nvp == 'compareMPs' || (input.nvp == 'explorePIs' && (input.pitab == 'pi3' || input.pitab == 'pi6' || input.pitab == 'vulnb' || input.pitab == 'relcpuepl')) || input.nvp == 'mps' || input.nvp == 'mixpis'",
+      conditionalPanel(condition="input.nvp == 'compareMPs' || (input.nvp == 'explorePIs' && (input.pitab == 'pi3' || input.pitab == 'pi6' || input.pitab == 'vulnb' || input.pitab == 'relcpuepl')) || input.nvp == 'robustness' || input.nvp == 'mps' || input.nvp == 'mixpis'",
         checkboxGroupInput(inputId = "hcrchoice", label="SKJ HCR selection", selected = unique(periodqs$hcrref), choiceNames = as.character(unique(periodqs$hcrname)), choiceValues = unique(periodqs$hcrref))
         #checkboxGroupInput(inputId = "hcrchoice", label="SKJ HCR selection", selected = hcrrefs, choiceNames = hcrnames, choiceValues = hcrrefs)
       ),
       # PI choice - only shown in the compare PIs tab
-      conditionalPanel(condition="input.nvp == 'compareMPs'",
+      conditionalPanel(condition="input.nvp == 'compareMPs' || input.nvp == 'robustness'",
         checkboxGroupInput(inputId = "pichoice", label="PI selection",choices = piselector, selected=sort(pis_list))
       ),
       # Catch grouping choice (all, PS in 678, PL in 1234) - show in compare MPs 
       #conditionalPanel(condition="(input.nvp == 'compareMPs' || (input.nvp == 'explorePIs' && (input.pitab == 'pi3' || input.pitab == 'pi6')))",
-      conditionalPanel(condition="input.nvp == 'compareMPs'",
+      conditionalPanel(condition="input.nvp == 'compareMPs' || input.nvp == 'robustness'",
         selectInput(inputId = "catchareachoice", label="Catch grouping (PIs 3 & 6 only)", choices = list("All areas"="total", "Purse seines in areas 6,7 & 8"="ps678", "Pole & line in areas 1,2,3 & 4" = "pl_jp"), selected="total")
       ),
       # Selecting catch by area 
@@ -247,26 +248,25 @@ ui <- fluidPage(id="top",
         radioButtons(inputId = "majurokobe", label="Majuro or Kobe plot", selected = "Majuro", choiceNames = c("Majuro", "Kobe"), choiceValues = c("Majuro", "Kobe"))
       ),
       
-      conditionalPanel(condition = "input.nvp == 'mixpis' && (input.mixpisid == 'mixss' || input.mixpisid == 'mixplrp' || input.mixpisid == 'mixcatch')",
-        radioButtons(inputId = "facetskjorbet", label="Panels by SKJ HCR or BET MP", selected = "betmp", choiceNames = c("BET MP", "SKJ HCR"), choiceValues = c("betmp", "skjhcr"))),
-      
       # Select plot type by bar or box (Note - need to include the NVP input as the the pitab input still has value even if not seen)
       #conditionalPanel(condition="(input.nvp == 'explorePIs') && (input.pitab== 'pi6') || (input.nvp == 'mixpis' && (input.mixpisid == 'mixss' || input.mixpisid == 'mixcatch'))",
       conditionalPanel(condition="(input.nvp == 'explorePIs') && (input.pitab== 'pi6')",
         radioButtons(inputId = "plotchoicebarbox", label="Plot selection",choices = list("Bar chart" = "median_bar", "Box plot" ="box"), selected="box")
       ),
       
-      # Box or ribbon for impact plots
-      conditionalPanel(condition="input.nvp == 'mixpis' && input.mixpisid == 'miximpact'",
-        radioButtons(inputId = "plotboxorribbon", label="Plot selection",choices = list("Stacked median ribbons" = "ribbon", "Box plot by period" ="box"), selected="ribbon"),
-        radioButtons(inputId = "skjhcrcolrow", label="SKJ HCR in rows or columns",choices = list("Columns" = "column", "Rows" ="row"), selected="column")
-      ),
-      
-      
       # Stability or variability
       conditionalPanel(condition="input.nvp == 'explorePIs' && input.pitab== 'pi6'",
         radioButtons(inputId = "stabvarchoice", label="Stability or variability",choices = list("Stability" = "stability", "Variability" ="variability"), selected="stability")
       ),
+      
+      # In Robustness tab choose the robustness set
+      conditionalPanel(condition="input.nvp == 'robustness'",
+        selectInput(inputId = "robustset", label = "Robustness set", 
+          choices = list("Hyperstability" = "robust_hyperstability", "Low recruitment" = "robust_low_rec_10yrs", "Effort creep" = "robust_effort_creep"),
+          selected = "robust_hyperstability") 
+      )
+      
+      
     ), # End of sidebarPanel
     
     #---------------------------------------------
@@ -451,6 +451,31 @@ ui <- fluidPage(id="top",
             ) # End of Majuro Kobe tab
           )                                
         ), # End of Other SKJ indicators tab                                
+        
+        #------------------------------------------------------
+        # Robustness
+        #------------------------------------------------------
+        tabPanel("Robustness set", value="robustness",
+          fluidRow(
+            p("The robustness set includes more extreme, but still plausible, uncertainties than the reference set of operating models."),
+            p("There are currently three robustness set scenarios: increased hyperstability; lower than average future recruitment; increased effort creep in the purse seine fisheries."),
+            p("The results from the robustness evaluations should not be compared to the reference set evaluations as the operating models are different."),
+            p("Instead, the relative performance of the candidate HCRs should be compared across the robustness set scenarios.")
+          ),
+          fluidRow(column(12,
+            p(boxplottext),
+            plotOutput("plot_box_robust", height="auto") 
+          )),
+          fluidRow(column(12,
+            p(yearrangetext),
+            p(pi47text),
+            p(biotext),
+            p(pi36text),
+            p(sbsbf02012text)
+          ))
+          
+          
+        ), # End of Robustness tab
         
         #------------------------------------------
         # The Management Procedures
@@ -749,7 +774,15 @@ server <- function(input, output, session) {
       return()
     }
     catch_area_choice <- input$catchareachoice
-    dat <- subset(periodqs, hcrref %in% hcr_choices & period == period_choice & area %in% c("all", catch_area_choice, "ps678x") & piname %in% pi_choices & metric != "catch stability")
+    #dat <- subset(periodqs, hcrref %in% hcr_choices & period == period_choice & area %in% c("all", catch_area_choice, "ps678x") & piname %in% pi_choices & metric != "catch stability")
+    # See bar box compare for notes on this horrendous subset
+    dat <- periodqs[period == period_choice &
+           metric != "catch stability" &
+           piname %in% pi_choices &
+           area %in% c("all", catch_area_choice, "pl_jp", "ps678x") &
+           # Drop areas not in catch_area_choice from PI 3 and 6 only  (to deal with pl_jp)
+           !(piname == "PI 3: Catch\n(relative to 2013-2015)" & !(area %in% catch_area_choice)) &
+           !(piname == "PI 6: Catch stability" & !(area %in% catch_area_choice))]
     tabdat <- pitable(dat, percentile_range = outer_percentiles)
     return(tabdat)
   }
@@ -1030,6 +1063,99 @@ server <- function(input, output, session) {
   # Checking distribution of scaler in first year
   #pdat <- hcrresultsdf[year == 2021] 
   #p <- ggplot(pdat, aes(x=scaler)) + geom_histogram() + facet_wrap(~msectrl)
+  
+  # Robustness plots
+  output$plot_box_robust <- renderPlot({
+      hcr_choices <- input$hcrchoice
+      pi_choices <- input$pichoice
+      if((length(hcr_choices) < 1) | (length(pi_choices) < 1)){
+        return()
+      }
+      # There are a maximum of length(pis_list) panels (currently 10)
+      # pi1, pi3, pi4 (x2), pi6, pi7, pi8, relative effort, sbsbf0, sbsbf0 relative to TRP
+      # (see pis_list above)
+      # They have different groupings based on metric and area
+      # pi1: metric = SBSBF0, area = 1-8, all
+      # pi3: area = 1-8, total, ps678, pl_jp
+      # pi4: area = ps678x, 1 - 4, pl_jp
+      # pi6: area = as pi3 and metric catch stability / relative catch stability (not in piname so need additional subset)
+      # pi7: area = ps678x
+      # pi8: area = all
+      # sbsbsf0: area = 1-8, all
+      catch_area_choice <- input$catchareachoice
+      
+      # Subset out the data you want to plot based on user options
+      # Need to be careful as PI 4 has six areas - PL 1-4 (for indiv P&L) pl_jp and ps678x
+      # Gets tricky with areas for PI 3 and 4
+      # For 3 we want one of pl_jp, ps678 or total - given by catchareachoice
+      # For 4 we want both of pl_jp and ps678x - pl_jp is the pain
+      dat <- periodqs_robust[set == input$robustset & period != "Rest" &
+             metric != "catch stability" &
+             piname %in% pi_choices &
+             area %in% c("all", catch_area_choice, "pl_jp", "ps678x") &
+             # Drop areas not in catch_area_choice from PI 3 and 6 only  (to deal with pl_jp)
+             !(piname == "PI 3: Catch\n(relative to 2013-2015)" & !(area %in% catch_area_choice)) &
+             !(piname == "PI 6: Catch stability" & !(area %in% catch_area_choice))]
+      
+      p <- barboxplot(dat=dat, hcr_choices=hcr_choices, plot_type="box", quantiles=quantiles)
+      # Do we fix axis at 0? Probably
+      p <- p + ggplot2::ylim(0,NA)
+      # Coord cartesian to zoom
+      #p <- p + coord_cartesian(ylim=c(0.5,NA)) # Fixes barcharts - all of them at 0.5
+      # How to get different ones
+      p <- p + ggplot2::ylab("Value") + ggplot2::xlab("Time period")
+      # Add LRP and TRP lines
+      # Only if SB/SBF=0 is in dat
+      if ("SB/SBF=0" %in% pi_choices){
+        p <- p + ggplot2::geom_hline(data=data.frame(yint=lrp, piname="SB/SBF=0"), ggplot2::aes(yintercept=yint), linetype=2)
+        p <- p + ggplot2::geom_hline(data=data.frame(yint=trp3, piname="SB/SBF=0"), ggplot2::aes(yintercept=yint), linetype=2)
+      }
+      # Add 1.0 line for relative to TRP plot
+      if ("SB/SBF=0 relative to target" %in% pi_choices){
+        p <- p + ggplot2::geom_hline(data=data.frame(yint=1.0, piname="SB/SBF=0 relative to target"), ggplot2::aes(yintercept=yint), linetype=2)
+      }
+      # Must have a probability of at least 0.8 above LRP
+      if ("PI 1: Prob. above LRP" %in% pi_choices){
+        p <- p + ggplot2::geom_hline(data=data.frame(yint=0.8,piname="PI 1: Prob. above LRP"), ggplot2::aes(yintercept=yint), linetype=2)
+      }
+      # Add 1.0 line for relative effort
+      if ("Effort\n(relative to reference period)" %in% pi_choices){
+        p <- p + ggplot2::geom_hline(data=data.frame(yint=1.0, piname="Effort\n(relative to reference period)"), ggplot2::aes(yintercept=yint), linetype=2)
+      }
+      # Add 1.0 line for relative CPUE PL
+      if ("PI 4: P&L CPUE\n(relative to 2001-2004)" %in% pi_choices){
+        p <- p + ggplot2::geom_hline(data=data.frame(yint=1.0, piname="PI 4: P&L CPUE\n(relative to 2001-2004)"), ggplot2::aes(yintercept=yint), linetype=2)
+      }
+      # Add 1.0 line for relative CPUE PL
+      if ("PI 4: PS CPUE\n(relative to 2012)" %in% pi_choices){
+        p <- p + ggplot2::geom_hline(data=data.frame(yint=1.0, piname="PI 4: PS CPUE\n(relative to 2012)"), ggplot2::aes(yintercept=yint), linetype=2)
+      }
+      #p <- p + ggplot2::facet_wrap(~piname, scales="free", ncol=no_facets_row)
+      # Why do I have to make the wrap a factor when it already is?
+      p <- p + ggplot2::facet_wrap(~factor(piname, levels=pis_list), scales="free", ncol=no_facets_row)
+      return(p)
+    },
+    height=function(){
+      return(max(height_per_pi*1.5, (height_per_pi * ceiling(length(input$pichoice) / no_facets_row))))
+    }
+  )
+    
+    
+    
+    
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   # HCR output analysis plots
   hcr_op_plots <- function(type="op"){

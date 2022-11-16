@@ -39,7 +39,8 @@ pitable <- function(dat, percentile_range = c(10,90), signif=3){
   dat[dat$pi=="pi1", "value"] <- signif(dat[dat$pi=="pi1", "X50."],signif)
   tabdat <- dat[,c("hcrref", "piname", "value")]
   tabdat[tabdat$name=="Biomass","piname"] <- "SB/SBF=0"
-  tabdat <- as.data.frame(spread(tabdat, key="hcrref", value="value"))
+  #tabdat <- as.data.frame(spread(tabdat, key="hcrref", value="value"))
+  tabdat <- as.data.frame(dcast(tabdat, hcrref ~ piname, value.var = "value"))
   # Have rownames?
   #rnames <- tabdat[,1]
   #tabdat <- tabdat[,-1]
