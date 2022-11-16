@@ -147,7 +147,7 @@ tabletext <- paste0("The tables show the median indicator values in each time pe
 timeseriesplottext <- paste0("The outer ribbons show the ", outer_percentiles[2] - outer_percentiles[1], "th percentile range and the inner ribbons show the ", inner_percentiles[2] - inner_percentiles[1], "th percentile range. The dashed, black line is the median value.")
 timeseriesplottext2 <-  "The dashed vertical lines show, from left, the start of the MSE evaluation with transient period assumptions, the start of the HCR operating with the short-, medium- and long-term periods."
 stabtext <- "Note that the stability can only be compared between time periods, not between areas or area groups, i.e. it is the relative stability in that area."
-sbsbf02012text <- "On the SB/SBF=0 plot, the lower dashed line is the Limit Reference Point and the upper dashed line is the target SB/SBF=0 (where the target is determined as equilibrium stock stock status under baseline fishing levels)."
+sbsbf02012text <- "On the SB/SBF=0 plot, the lower dashed line is the Limit Reference Point and the upper dashed line is the target SB/SBF=0 (where the target is determined as equilibrium stock status under baseline fishing levels)."
 
 #--------------------------------------------------------------------------------------------------
 
