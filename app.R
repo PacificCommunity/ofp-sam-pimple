@@ -83,7 +83,8 @@ wormiters <- sample(unique(worms$iter), nworms)
 lrp <- 0.2
 trp1 <- 0.5
 trp2 <- unlist(yearqs[piname == "SB/SBF=0" & msectrl == "Z2" & area == "all" & year == 2012, "X50."]) # 0.4545289
-trp3 <- 0.41 # Les' two-eyed TRP
+#trp3 <- 0.41 # Les' two-eyed TRP
+trp3 <- 0.39 # Equilibrium baseline conditions
 
 # Find common iters between HCRs - used for HCR plots so we can directly compare
 # Some iters dropped due to errors

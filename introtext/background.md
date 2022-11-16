@@ -72,7 +72,8 @@ A value of 0 means that the effort varies relatively strongly over time, compare
 
 ### 8. Proximity of SB/SBF=0 to the target SB/SBF=0
 
-This indicator measures how close, on average, the SB/SBF=0 is to the target SB/SBF=0.
+This indicator measures how close, on average, the SB/SBF=0 is to the target SB/SBF=0 (where the target is determined as equilibrium stock stock status under baseline fishing levels).
+
 The higher the value of the indicator, the closer SB/SBF=0 was to this reference value in each year, on average.
 A value of 1 means that the SB/SBF=0 was exactly at the reference value in each year.
 A value of 0 means that the SB/SBF=0 was as far from the reference value as possible in each year.
@@ -95,7 +96,7 @@ SB/SBF=0 is a measure of stock status and can be compared to the Limit Reference
 
 ### SB/SBF=0 relative to target
 
-This indicator measures the SB/SBF=0 relative to the target.
+This indicator measures the SB/SBF=0 relative to the target (where the target is determined as equilibrium stock stock status under baseline fishing levels).
 A value of 1 means that the SB/SBF=0 is at the target value.
 
 ## Plot Types
