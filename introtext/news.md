@@ -2,7 +2,8 @@
 
 ## November 2022
 
-* Changed the SB/SBF=0 relative to SB/SBF=0 in 2012 indicator to SB/SBF=0 relative to target (0.41 using the OM grid).
+* Added robustness sets including hyperstability; low recruitment; and effort creep scenarios.
+* Changed the SB/SBF=0 relative to SB/SBF=0 in 2012 indicator to SB/SBF=0 relative to target (where the target is determined as equilibrium stock status under baseline fishing levels).
 * Added effort relative to effort in reference period indicator for effort driven fisheries (purse seine and pole & line).
 * Box plots are now the default presentation method instead of bar charts.
 * Moved pole and line CPUE to 'Compare performance' tab.
