@@ -200,7 +200,7 @@ ui <- fluidPage(id="top",
           tags$h1("PIMPLE"),
           tags$p("Performance Indicators and Management Procedures expLorEr"),
           tags$footer(
-            tags$p("version 1.0.0 Tarantula Deadly Cargo"),
+            tags$p("version 1.0.1 Tarantula Deadly Cargo"),
             tags$p("Copyright 2021 OFP SPC MSE Team."),
             tags$p("Distributed under the GPL 3")
           )
