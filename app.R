@@ -196,7 +196,7 @@ ui <- fluidPage(id="top",
   sidebarLayout(
     sidebarPanel(width=side_panel_width,
       br(),
-      img(src = "spc.png", height = 60),
+      img(src = "spc.png", width= "60%"), 
       br(),
       br(),
       #-----------------------------------------------------------------------
