@@ -29,6 +29,7 @@ ref_files <- load("data/WCPFC_2022_reference_results.Rdata")
 rob_files <- load("data/WCPFC_2022_robustness_results.Rdata")
 
 # Which HCRs do we want to show?
+# Include the Brian variants
 #hcrrefs <- sort(unique(periodqs$hcrref))
 #hcrnames <- sort(unique(periodqs$hcrname))
 # Not the Brian variants
@@ -42,7 +43,7 @@ yearqs <- yearqs[hcrref %in% hcrrefs]
 hcr_shape <- hcr_shape[hcrref %in% hcrrefs]
 hcr_points <- hcr_points[hcrref %in% hcrrefs]
 scaler <- scaler[hcrref %in% hcrrefs]
-scaler_diff <- scaler[hcrref %in% hcrrefs]
+scaler_diff <- scaler_diff[hcrref %in% hcrrefs]
 
 #--------------------------------------------------------------------------------------------------
 
@@ -457,12 +458,18 @@ ui <- fluidPage(id="top",
         # Robustness
         #------------------------------------------------------
         tabPanel("Robustness set", value="robustness",
+          #fluidRow(
+          #  h3("Coming soon...")
+          #)
+          
           fluidRow(
+            column(12,
             p("The robustness set includes more extreme, but still plausible, uncertainties than the reference set of operating models."),
             p("There are currently three robustness set scenarios: increased hyperstability; lower than average future recruitment; increased effort creep in the purse seine fisheries."),
             p("The results from the robustness evaluations should not be compared to the reference set evaluations as the operating models are different."),
-            p("Instead, the relative performance of the candidate HCRs should be compared across the robustness set scenarios.")
-          ),
+            p("Instead, the relative performance of the candidate HCRs should be compared across the robustness set scenarios."),
+            p("Note that for the 'low recruitment' robustness scenario, the low recruitment affects both the SB and the SBF0 so that SB/SBF0 may not be as affected as expected.")
+          )),
           fluidRow(column(12,
             p(boxplottext),
             plotOutput("plot_box_robust", height="auto") 
@@ -619,6 +626,7 @@ server <- function(input, output, session) {
   # Bar or box plot - facetting on PI
   plot_barbox_comparehcr <- function(plot_type="median_bar"){
     rPlot <- renderPlot({
+      
       hcr_choices <- input$hcrchoice
       pi_choices <- input$pichoice
       if((length(hcr_choices) < 1) | (length(pi_choices) < 1)){
