@@ -171,7 +171,14 @@ sbsbf02012text <- "On the SB/SBF=0 plot, the lower dashed line is the Limit Refe
 #    ),
 #    mainPanel(width=main_panel_width,
 #      tags$style(type="text/css", "body {padding-top: 70px;}"), 
-#      h1("PIMPLE is being updated. Check back soon.")
+#      h1("The PIMPLE address has been updated."),
+#      br(),
+#      p("For the results to be discussed at WCPFC 19 go to:"),
+#      a(href="https://ofp-sam.shinyapps.io/PIMPLE_WCPFC19/", "https://ofp-sam.shinyapps.io/PIMPLE_WCPFC19/"),
+#      br(),
+#      br(),
+#      p("For the results used at the Science Management Dialogue Meeting 2022 go to:"),
+#      a(href="https://ofp-sam.shinyapps.io/PIMPLE2022/", "https://ofp-sam.shinyapps.io/PIMPLE2022/") 
 #    )
 #)
 
