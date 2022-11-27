@@ -30,11 +30,11 @@ rob_files <- load("data/WCPFC_2022_robustness_results.Rdata")
 
 # Which HCRs do we want to show?
 # Include the Brian variants
-#hcrrefs <- sort(unique(periodqs$hcrref))
-#hcrnames <- sort(unique(periodqs$hcrname))
+hcrrefs <- sort(unique(periodqs$hcrref))
+hcrnames <- sort(unique(periodqs$hcrname))
 # Not the Brian variants
-hcrrefs <- unique(periodqs$hcrref)[1:5]
-hcrnames <- unique(periodqs$hcrname)[1:5]
+#hcrrefs <- unique(periodqs$hcrref)[1:5]
+#hcrnames <- unique(periodqs$hcrname)[1:5]
 
 # Only keep HCRs we want
 periodqs <- periodqs[hcrref %in% hcrrefs]
@@ -240,16 +240,24 @@ ui <- fluidPage(id="top",
       conditionalPanel(condition="(input.nvp == 'explorePIs' && (input.pitab=='pi3' || input.pitab=='vulnb' || input.pitab=='relcpuepl')) || (input.nvp == 'compareMPs' && input.comptab == 'timeseries')",
         checkboxInput("showspag", "Show trajectories", value=FALSE) 
       ),
+      
+      
       # In Management Procedures tab, show the points and trajectories
-      # Change false to true to show performance options (can hide from users)
+      # Comment out these lines to not show the HCR points and trajectories
+      conditionalPanel(condition=("input.nvp == 'about'"),
+        checkboxInput(inputId="showhcrperformance", label="Don't touch this button", value=FALSE)
+      ),
+      # Change false to true to show secret performance options (can hide from users)
+      conditionalPanel(condition="((input.nvp == 'mps') && (input.showhcrperformance == true))",
       #conditionalPanel(condition="((input.nvp == 'mps') && true)",
-      conditionalPanel(condition="((input.nvp == 'mps') && false)",
-        p("HCR performance options"),
+      #conditionalPanel(condition="((input.nvp == 'mps') && false)",
+        #p("HCR performance options"),
         radioButtons(inputId="hcrperformance", label="HCR performance options", choices=list("Show nothing" = "shownothing", "Show selection of points" = "showpoints", "Show iter paths" = "showpaths"), selected="shownothing"), 
         conditionalPanel(condition="input.hcrperformance == 'showpaths'",
           numericInput(inputId='hcrperfiter', label="Iter to show path for", value=1, min=1, max=length(common_iters), step=1)
         )
       ),
+      
       # Kobe plot HCR selection - one at a time only
       #conditionalPanel(condition="input.nvp == 'majurokobeplot'",
       conditionalPanel(condition="input.nvp == 'explorePIs' & input.pitab == 'majurokobeplot'",
@@ -1018,12 +1026,12 @@ server <- function(input, output, session) {
     if(input$hcrperformance=="showpoints"){
       showpoints <- TRUE
       showpaths <- FALSE
-      nhcriters <- min(10, length(common_iters))
+      nhcriters <- min(50, length(common_iters))
       hcriters <- sample(common_iters, nhcriters)
       hcr_points_sub <- subset(hcr_points, iter %in% hcriters)
     }
     if(input$hcrperformance=="showpaths"){
-      showpoints <- TRUE
+      showpoints <- FALSE
       showpaths <- TRUE
       hcriters <- input$hcrperfiter
       hcr_points_sub <- subset(hcr_points, iter %in% hcriters)
@@ -1201,7 +1209,8 @@ server <- function(input, output, session) {
     upper <- quantiles_text[3]
     
     p <- ggplot(pdat, aes(x=as.factor(year)))
-    p <- p + geom_boxplot(aes_string(ymin=ymin, ymax=ymax, lower=lower, upper=upper, middle="X50.", fill="hcrref"), stat="identity", width=0.7)
+    # Replaced aes_string() with aes() and this funky .data[[]] syntax
+    p <- p + geom_boxplot(aes(ymin=.data[[ymin]], ymax=.data[[ymax]], lower=.data[[lower]], upper=.data[[upper]], middle=X50., fill=hcrref), stat="identity", width=0.7)
     p <- p + ylab(ylabel)
     p <- p + xlab("Management period start year")
     p <- p + scale_fill_manual(values=hcr_cols)

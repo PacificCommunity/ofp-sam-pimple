@@ -19,7 +19,8 @@ barboxplot <- function(dat, hcr_choices, plot_type="median_bar", quantiles=c(0.1
   dat <- dat[dat$hcrref %in% hcr_choices,] # Trying to remove weird warning about hcr_no being a global variable
   hcr_cols <- get_hcr_colours(hcr_names=all_hcr_names, chosen_hcr_names=unique(dat$hcrref))
   if (plot_type=="median_bar"){
-    p <- ggplot(dat, aes_string(x="period", y="X50.", fill="hcrref"))
+    #p <- ggplot(dat, aes_string(x="period", y="X50.", fill="hcrref"))
+    p <- ggplot(dat, aes(x=period, y=X50., fill=hcrref))
     p <- p + geom_bar(stat="identity", position="dodge", colour="black", width=0.7)
     p <- p + ylab("Average value")
   }
@@ -31,8 +32,10 @@ barboxplot <- function(dat, hcr_choices, plot_type="median_bar", quantiles=c(0.1
     ymax <- quantiles_text[4]
     lower <- quantiles_text[2]
     upper <- quantiles_text[3]
-    p <- ggplot(dat, aes_string(x="period"))
-    p <- p + geom_boxplot(aes_string(ymin=ymin, ymax=ymax, lower=lower, upper=upper, middle="X50.", fill="hcrref"), stat="identity", width=0.7)
+    #p <- ggplot(dat, aes_string(x="period"))
+    p <- ggplot(dat, aes(x=period))
+    #p <- p + geom_boxplot(aes_string(ymin=ymin, ymax=ymax, lower=lower, upper=upper, middle="X50.", fill="hcrref"), stat="identity", width=0.7)
+    p <- p + geom_boxplot(aes(ymin=.data[[ymin]], ymax=.data[[ymax]], lower=.data[[lower]], upper=.data[[upper]], middle=X50., fill=hcrref), stat="identity", width=0.7)
   }
   p <- p + xlab("Time period")
   p <- p + scale_fill_manual(values=hcr_cols)
@@ -66,10 +69,13 @@ time_series_plot <- function(dat, hcr_choices, wormdat=NULL,
   # Start the plot
   p <- ggplot(dat, aes(x=year))
   # The ribbon
-  p <- p + geom_ribbon(aes_string(ymin=outer_ynames[1], ymax=outer_ynames[2], fill="hcrref"), alpha=0.5)
-  p <- p + geom_ribbon(aes_string(ymin=inner_ynames[1], ymax=inner_ynames[2], fill="hcrref"))
+  #p <- p + geom_ribbon(aes_string(ymin=outer_ynames[1], ymax=outer_ynames[2], fill="hcrref"), alpha=0.5)
+  p <- p + geom_ribbon(aes(ymin=.data[[outer_ynames[1]]], ymax=.data[[outer_ynames[2]]], fill=hcrref), alpha=0.5)
+  #p <- p + geom_ribbon(aes_string(ymin=inner_ynames[1], ymax=inner_ynames[2], fill="hcrref"))
+  p <- p + geom_ribbon(aes(ymin=.data[[inner_ynames[1]]], ymax=.data[[inner_ynames[2]]], fill=hcrref))
   # Add median line
-  p <- p + geom_line(aes(y=X50., group=hcrref), colour="black", linetype=2, size=rel(0.5))
+  #p <- p + geom_line(aes(y=X50., group=hcrref), colour="black", linetype=2, size=rel(0.5))
+  p <- p + geom_line(aes(y=X50., group=hcrref), colour="black", linetype=2, linewidth=rel(0.5))
   p <- p + xlab("Year")
   # Add worms
   # These look bad - hard to see the colours
@@ -77,7 +83,7 @@ time_series_plot <- function(dat, hcr_choices, wormdat=NULL,
     wormdat <- subset(wormdat, hcrref %in% hcr_choices)
     #wormdat <- wormdat[!is.na(wormdat$value),]
     # Put a black background on the line to help
-    p <- p + geom_line(data=wormdat, aes(x=year, y=value, group=wormid), colour="black", linetype=linetype_worm, size=size_worm*1.2)
+    p <- p + geom_line(data=wormdat, aes(x=year, y=value, group=wormid), colour="black", linetype=linetype_worm, linewidth=size_worm*1.2)
   }
   # Colours
   p <- p + scale_fill_manual(values=hcr_cols)
@@ -110,8 +116,8 @@ hcr_plot <- function(hcr_choices, hcr_shape, hcr_points, lrp, trp, add_points=FA
   shapedat <- subset(hcr_shape, hcrref %in% hcr_choices)
   pointsdat <- subset(hcr_points, hcrref %in% hcr_choices)
   p <- ggplot(shapedat, aes(x=x, y=y))
-  p <- p + geom_line(aes(group=hcrref), colour="black", size=blacklinesize) # outline
-  p <- p + geom_line(aes(colour=hcrref), size=linesize)
+  p <- p + geom_line(aes(group=hcrref), colour="black", linewidth=blacklinesize) # outline
+  p <- p + geom_line(aes(colour=hcrref), linewidth=linesize)
   p <- p + xlab("Estimated SB/SBF=0") + ylab("Effort multiplier")
   p <- p + theme_bw()
   p <- p + theme(legend.position="top", legend.title=element_blank())
@@ -121,12 +127,16 @@ hcr_plot <- function(hcr_choices, hcr_shape, hcr_points, lrp, trp, add_points=FA
   p <- p + scale_x_continuous(expand = c(0, 0))
   # Add points to it
   if (add_points){
-    #p <- p + geom_point(dat=pointsdat, aes(x=sbsbf0, y=scaler, fill=hcrref), colour="black", shape=21, size=pointsize, alpha=0.3, stroke=stroke)
-    p <- p + geom_jitter(dat=pointsdat, aes(x=sbsbf0, y=scaler, fill=hcrref), width=0.00, height=0.01, colour="black", shape=21, size=pointsize, stroke=stroke)
+    p <- p + geom_jitter(dat=pointsdat, aes(x=sbsbf0, y=scaler, fill=hcrref), width=0.00, height=0.015, colour="black", shape=21, size=4.2, stroke=2, alpha=0.5)
   }
   if (add_path){
-    # Connect the iters by lines so you can see what happens?
-    p <- p + geom_path(dat=pointsdat, aes(x=sbsbf0, y=scaler, group=interaction(iter, hcrref)), colour="black")
+    # Connect the iters by lines so you can see what happens
+    # No alpha or jittering on these points
+    p <- p + geom_point(dat=pointsdat, aes(x=sbsbf0, y=scaler, fill=hcrref), colour="black", shape=21, size=4.2, stroke=2)
+    # Add thicker point at start
+    minyear <- min(pointsdat$year)
+    p <- p + geom_point(dat=pointsdat[year==minyear,], aes(x=sbsbf0, y=scaler, fill=hcrref), colour="black", shape=21, size=3.2, stroke=4)
+    p <- p + geom_path(dat=pointsdat, aes(x=sbsbf0, y=scaler, group=interaction(iter, hcrref)), colour="black", linewidth=1.5)
   }
   # Add LRP and TRP
   p <- p + geom_vline(aes(xintercept=lrp), linetype=2)
@@ -154,10 +164,10 @@ mixpis_barbox_biol_plot <- function(dat, hcr_choices, betmp_choices, barbox_choi
     }
     p <- ggplot(dat, aes(x=period))
     if (barbox_choice == "box"){
-      p <- p + geom_boxplot(aes_string(ymin="X10.", ymax="X90.", lower="X25.", upper="X75.", middle="X50.", fill=fillvar), stat="identity")
+      p <- p + geom_boxplot(aes(ymin=X10., ymax=X90., lower=X25., upper=X75., middle=X50., fill=.data[[fillvar]]), stat="identity")
     }
     if (barbox_choice == "median_bar"){
-      p <- p + geom_bar(aes_string(y="X50.", fill=fillvar), stat="identity", position="dodge", colour="black", width=0.7)
+      p <- p + geom_bar(aes(y=X50., fill=.data[[fillvar]]), stat="identity", position="dodge", colour="black", width=0.7)
     }
     p <- p + xlab("Time period")
     if (fillvar == "skjhcrref"){
