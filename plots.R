@@ -139,7 +139,7 @@ hcr_plot <- function(hcr_choices, hcr_shape, hcr_points, lrp, trp, add_points=FA
     p <- p + geom_path(dat=pointsdat, aes(x=sbsbf0, y=scaler, group=interaction(iter, hcrref)), colour="black", linewidth=1.5)
   }
   # Add LRP and TRP
-  p <- p + geom_vline(aes(xintercept=lrp), linetype=2)
+  #p <- p + geom_vline(aes(xintercept=lrp), linetype=2)
   #p <- p + geom_vline(aes(xintercept=trp), linetype=2)
   p <- p + ylim(0, NA)
   return(p)

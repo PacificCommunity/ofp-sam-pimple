@@ -24,17 +24,21 @@ library(DT)
 source("funcs.R")
 source("plots.R")
 
+# Data set depends on which target TRP we are using
+trp3 <- 0.41 # Les' two-eyed TRP
+#trp3 <- 0.39 # Equilibrium baseline conditions
+
 # Load the indicator data for the reference sets - including Kobe and Majuro data
-ref_files <- load("data/WCPFC_2022_reference_results.Rdata")
-rob_files <- load("data/WCPFC_2022_robustness_results.Rdata")
+ref_files <- load(paste0("data/WCPFC_2022_reference_", trp3, "_results.Rdata"))
+rob_files <- load(paste0("data/WCPFC_2022_robustness_", trp3, "_results.Rdata"))
 
 # Which HCRs do we want to show?
 # Include the Brian variants
 hcrrefs <- sort(unique(periodqs$hcrref))
 hcrnames <- sort(unique(periodqs$hcrname))
 # Not the Brian variants
-#hcrrefs <- unique(periodqs$hcrref)[1:5]
-#hcrnames <- unique(periodqs$hcrname)[1:5]
+hcrrefs <- unique(periodqs$hcrref)[1:5]
+hcrnames <- unique(periodqs$hcrname)[1:5]
 
 # Only keep HCRs we want
 periodqs <- periodqs[hcrref %in% hcrrefs]
@@ -84,8 +88,6 @@ wormiters <- sample(unique(worms$iter), nworms)
 lrp <- 0.2
 trp1 <- 0.5
 trp2 <- unlist(yearqs[piname == "SB/SBF=0" & msectrl == "Z2" & area == "all" & year == 2012, "X50."]) # 0.4545289
-#trp3 <- 0.41 # Les' two-eyed TRP
-trp3 <- 0.39 # Equilibrium baseline conditions
 
 # Find common iters between HCRs - used for HCR plots so we can directly compare
 # Some iters dropped due to errors
@@ -244,9 +246,9 @@ ui <- fluidPage(id="top",
       
       # In Management Procedures tab, show the points and trajectories
       # Comment out these lines to not show the HCR points and trajectories
-      conditionalPanel(condition=("input.nvp == 'about'"),
-        checkboxInput(inputId="showhcrperformance", label="Don't touch this button", value=FALSE)
-      ),
+      #conditionalPanel(condition=("input.nvp == 'about'"),
+      #  checkboxInput(inputId="showhcrperformance", label="Don't touch this button", value=FALSE)
+      #),
       # Change false to true to show secret performance options (can hide from users)
       conditionalPanel(condition="((input.nvp == 'mps') && (input.showhcrperformance == true))",
       #conditionalPanel(condition="((input.nvp == 'mps') && true)",
@@ -723,8 +725,9 @@ server <- function(input, output, session) {
 
   # Time series comparisons - just three plots
   #pinames_ts <- c("SB/SBF=0", "PI 3: Catch (rel. to 2013-2015)" ,"PI 4: Relative PS CPUE")
-  pinames_ts <- c("SB/SBF=0", "PI 3: Catch\n(relative to 2013-2015)", "PI 4: P&L CPUE\n(relative to 2001-2004)" ,"PI 4: PS CPUE\n(relative to 2012)")#, "Effort\n(relative to reference period)")
-  
+  pinames_ts <- c("SB/SBF=0", "PI 3: Catch\n(relative to 2013-2015)", "PI 4: P&L CPUE\n(relative to 2001-2004)" ,"PI 4: PS CPUE\n(relative to 2012)")#, "SB/SBF=0 relative to target")
+  #, "Effort\n(relative to reference period)")
+  #"SB/SBF=0 relative to target"
   
   # pis to plot time series of
   
