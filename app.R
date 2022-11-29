@@ -66,14 +66,22 @@ last_plot_year <- max(long_term)
 first_plot_year <- 1990
 
 # Quantiles - extract calculated percentiles from data object
-qnames <- colnames(periodqs)[!(colnames(periodqs) %in% c("area", "msectrl", "metric", "period", "pi", "piname", "hcrname", "hcrref", "area_name", "X50.", "set"))]
-qnames <- substring(qnames,2) # Drop the X
+qcolnames <- colnames(periodqs)[!(colnames(periodqs) %in% c("area", "msectrl", "metric", "period", "pi", "piname", "hcrname", "hcrref", "area_name", "X50.", "set"))]
+qnames <- substring(qcolnames,2) # Drop the X
 qnames <- substring(qnames,1,nchar(qnames)-1)
 quantiles <- as.numeric(qnames)
 # and the last character (a dot)
 inner_percentiles <- quantiles[c(2,length(quantiles)-1)]
 outer_percentiles <- quantiles[c(1,length(quantiles))]
 quantiles <- quantiles / 100
+
+# Quick hack to remove historical period for relative effort
+# X50. to qcolnames
+qcolnames <- c(qcolnames, "X50.")
+# Need to put brackets around qcolnames - otherwise it makes a column called qcolnames
+yearqs[piname == "Effort\n(relative to reference period)" & period == "Rest", (qcolnames) := NA]
+#yearqs[piname == "Effort\n(relative to reference period)" & period == "Rest" & msectrl=="Z2",]
+
 
 # Trim out years for tight time series plots
 yearqs <- yearqs[year %in% first_plot_year:last_plot_year]
@@ -725,7 +733,7 @@ server <- function(input, output, session) {
 
   # Time series comparisons - just three plots
   #pinames_ts <- c("SB/SBF=0", "PI 3: Catch (rel. to 2013-2015)" ,"PI 4: Relative PS CPUE")
-  pinames_ts <- c("SB/SBF=0", "PI 3: Catch\n(relative to 2013-2015)", "PI 4: P&L CPUE\n(relative to 2001-2004)" ,"PI 4: PS CPUE\n(relative to 2012)")#, "SB/SBF=0 relative to target")
+  pinames_ts <- c("SB/SBF=0", "PI 3: Catch\n(relative to 2013-2015)", "PI 4: P&L CPUE\n(relative to 2001-2004)" ,"PI 4: PS CPUE\n(relative to 2012)", "SB/SBF=0 relative to target")#, "Effort\n(relative to reference period)")
   #, "Effort\n(relative to reference period)")
   #"SB/SBF=0 relative to target"
   
@@ -782,11 +790,14 @@ server <- function(input, output, session) {
       if ("PI 4: P&L CPUE\n(relative to 2001-2004)" %in% pi_choices){
         p <- p + ggplot2::geom_hline(data=data.frame(yint=1.0, piname="PI 4: P&L CPUE\n(relative to 2001-2004)"), ggplot2::aes(yintercept=yint), linetype=2)
       }
-      # Add 1.0 line for relative CPUE PL
+      # Add 1.0 line for relative CPUE PS
       if ("PI 4: PS CPUE\n(relative to 2012)" %in% pi_choices){
         p <- p + ggplot2::geom_hline(data=data.frame(yint=1.0, piname="PI 4: PS CPUE\n(relative to 2012)"), ggplot2::aes(yintercept=yint), linetype=2)
       }
-    
+      # Add 1.0 line for relative SB/SBF=0
+      if ("SB/SBF=0 relative to target" %in% pi_choices){
+        p <- p + ggplot2::geom_hline(data=data.frame(yint=1.0, piname="SB/SBF=0 relative to target"), ggplot2::aes(yintercept=yint), linetype=2)
+      }
     
     # Size of labels etc
     p <- p + theme(axis.text=element_text(size=16), axis.title=element_text(size=16), strip.text=element_text(size=16), legend.text=element_text(size=16))
