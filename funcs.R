@@ -54,16 +54,16 @@ get_hcr_param_table <- function(){
   # These data should be produced during the PI calculation
   # But for we now we can hardwire it
   # Ordering the names and empty rows
-  all_hcr_names <-  c("HCR 1 (+-10%)", "HCR 2 (+-10%)", "HCR 5 (+-10%)", "HCR 6 (+-10%)", "HCR 9 (+-10%)", "HCR 9b (+-10%)", "HCR 9c (+-10%)", "HCR 9d (+-10%)") 
+  all_hcr_names <-  c("Adopted WCPFC19", "HCR 1 (+-10%)", "HCR 2 (+-10%)", "HCR 5 (+-10%)", "HCR 6 (+-10%)", "HCR 9 (+-10%)", "HCR 9b (+-10%)", "HCR 9c (+-10%)", "HCR 9d (+-10%)") 
   all_hcr_names_padding <- c(rbind(all_hcr_names, rep(" ", length(all_hcr_names))))
   
   hcrtab <- data.frame(hcr_name = rep(all_hcr_names, each=2),
              hcr = all_hcr_names_padding,
              metric = c("SB/SBF=0", "HCR output"),
              limit = 0.2,
-             threshold = c(0.42, 1.0, 0.42, 1.0, 0.37, 1.0, 0.37, 1.0, 0.37, 1.0, 0.37, 1.0, 0.37, 1.0, 0.37, 1.0),
-             step_end = c(rep(" ", 6), 0.47, 1.0, 0.47, 1.0, 0.47, 1.0, 0.47, 1.0, 0.57, 1.0),
-             maximum = c(rep(" ", 6), 0.9, 1.3, 0.8, 1.4, 0.9, 1.2, 0.8, 1.2, 0.8, 1.2))
+             threshold = c(0.4, 1.0, 0.42, 1.0, 0.42, 1.0, 0.37, 1.0, 0.37, 1.0, 0.37, 1.0, 0.37, 1.0, 0.37, 1.0, 0.37, 1.0),
+             step_end = c(0.57, 1.0, rep(" ", 6), 0.47, 1.0, 0.47, 1.0, 0.47, 1.0, 0.47, 1.0, 0.57, 1.0),
+             maximum = c(0.8, 1.2, rep(" ", 6), 0.9, 1.3, 0.8, 1.4, 0.9, 1.2, 0.8, 1.2, 0.8, 1.2))
   # Fix column names
   colnames(hcrtab) <- c("hcr_ref", "HCR", " ", "Limit", "Threshold", "Step end", "Maximum")
   #hcrtab <- hcrtab[hcrtab$hcr_name %in% hcr_choices,]
