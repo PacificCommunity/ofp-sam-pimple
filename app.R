@@ -32,13 +32,14 @@ trp3 <- 0.41 # Les' two-eyed TRP
 ref_files <- load(paste0("data/WCPFC_2022_reference_", trp3, "_results.Rdata"))
 rob_files <- load(paste0("data/WCPFC_2022_robustness_", trp3, "_results.Rdata"))
 
+
 # Which HCRs do we want to show?
 # Include the Brian variants
 hcrrefs <- sort(unique(periodqs$hcrref))
 hcrnames <- sort(unique(periodqs$hcrname))
 # Not the Brian variants
-hcrrefs <- unique(periodqs$hcrref)[1:5]
-hcrnames <- unique(periodqs$hcrname)[1:5]
+#hcrrefs <- unique(periodqs$hcrref)[1:5]
+#hcrnames <- unique(periodqs$hcrname)[1:5]
 
 # Only keep HCRs we want
 periodqs <- periodqs[hcrref %in% hcrrefs]
@@ -254,9 +255,9 @@ ui <- fluidPage(id="top",
       
       # In Management Procedures tab, show the points and trajectories
       # Comment out these lines to not show the HCR points and trajectories
-      #conditionalPanel(condition=("input.nvp == 'about'"),
-      #  checkboxInput(inputId="showhcrperformance", label="Don't touch this button", value=FALSE)
-      #),
+      conditionalPanel(condition=("input.nvp == 'about'"),
+        checkboxInput(inputId="showhcrperformance", label="Don't touch this button", value=FALSE)
+      ),
       # Change false to true to show secret performance options (can hide from users)
       conditionalPanel(condition="((input.nvp == 'mps') && (input.showhcrperformance == true))",
       #conditionalPanel(condition="((input.nvp == 'mps') && true)",
@@ -1030,21 +1031,19 @@ server <- function(input, output, session) {
     if(length(hcr_choices) < 1){
       return()
     }
-
+    # Default is to show neither points or paths
+    showpoints <- FALSE
+    showpaths <- FALSE
     # Secret HCR performance options
-    if(input$hcrperformance=="shownothing"){
-      showpoints <- FALSE
-      showpaths <- FALSE
-    }
     hcr_points_sub <- hcr_points
-    if(input$hcrperformance=="showpoints"){
+    if(input$hcrperformance=="showpoints" & input$showhcrperformance == TRUE){
       showpoints <- TRUE
       showpaths <- FALSE
       nhcriters <- min(50, length(common_iters))
       hcriters <- sample(common_iters, nhcriters)
       hcr_points_sub <- subset(hcr_points, iter %in% hcriters)
     }
-    if(input$hcrperformance=="showpaths"){
+    if(input$hcrperformance=="showpaths" & input$showhcrperformance == TRUE){
       showpoints <- FALSE
       showpaths <- TRUE
       hcriters <- input$hcrperfiter
