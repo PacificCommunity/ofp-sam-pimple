@@ -34,12 +34,15 @@ rob_files <- load(paste0("data/WCPFC_2022_robustness_", trp3, "_results.Rdata"))
 
 
 # Which HCRs do we want to show?
-# Include the Brian variants
+# Include all HCRs (the Brian variants + adopted WCPFC19)
 hcrrefs <- sort(unique(periodqs$hcrref))
 hcrnames <- sort(unique(periodqs$hcrname))
-# Not the Brian variants
-#hcrrefs <- unique(periodqs$hcrref)[1:5]
-#hcrnames <- unique(periodqs$hcrname)[1:5]
+# Not the Brian variants or adopted WCPFC19 (like beginning of WCPFC19)
+#hcrrefs <- unique(periodqs$hcrref)[2:6]
+#hcrnames <- unique(periodqs$hcrname)[2:6]
+# Show only adopted WCPFC, original set plus 9d
+hcrrefs <- unique(periodqs$hcrref)[c(1:6,9)]
+hcrnames <- unique(periodqs$hcrname)[c(1:6,9)]
 
 # Only keep HCRs we want
 periodqs <- periodqs[hcrref %in% hcrrefs]
@@ -226,8 +229,9 @@ ui <- fluidPage(id="top",
       # HCR selection - can select multiples
       # Only for the main Compare MPs tab, the MPs tab and SOME of the explorePIs tabs
       conditionalPanel(condition="input.nvp == 'compareMPs' || (input.nvp == 'explorePIs' && (input.pitab == 'pi3' || input.pitab == 'pi6' || input.pitab == 'vulnb' || input.pitab == 'relcpuepl')) || input.nvp == 'robustness' || input.nvp == 'mps' || input.nvp == 'mixpis'",
-        checkboxGroupInput(inputId = "hcrchoice", label="SKJ HCR selection", selected = unique(periodqs$hcrref), choiceNames = as.character(unique(periodqs$hcrname)), choiceValues = unique(periodqs$hcrref))
-        #checkboxGroupInput(inputId = "hcrchoice", label="SKJ HCR selection", selected = hcrrefs, choiceNames = hcrnames, choiceValues = hcrrefs)
+        #checkboxGroupInput(inputId = "hcrchoice", label="SKJ HCR selection", selected = unique(periodqs$hcrref), choiceNames = as.character(unique(periodqs$hcrname)), choiceValues = unique(periodqs$hcrref))
+        # Adopted only selected when starting
+        checkboxGroupInput(inputId = "hcrchoice", label="SKJ HCR selection", selected = "Adopted WCPFC19", choiceNames = as.character(unique(periodqs$hcrname)), choiceValues = unique(periodqs$hcrref))
       ),
       # PI choice - only shown in the compare PIs tab
       conditionalPanel(condition="input.nvp == 'compareMPs' || input.nvp == 'robustness'",
@@ -272,7 +276,7 @@ ui <- fluidPage(id="top",
       # Kobe plot HCR selection - one at a time only
       #conditionalPanel(condition="input.nvp == 'majurokobeplot'",
       conditionalPanel(condition="input.nvp == 'explorePIs' & input.pitab == 'majurokobeplot'",
-        radioButtons(inputId = "hcrchoicekobe", label="HCR selection", selected = unique(periodqs$hcrref)[1], choiceNames = as.character(unique(periodqs$hcrname)), choiceValues = unique(periodqs$hcrref)),
+        radioButtons(inputId = "hcrchoicekobe", label="SKJ HCR selection", selected = "Adopted WCPFC19", choiceNames = as.character(unique(periodqs$hcrname)), choiceValues = unique(periodqs$hcrref)),
         radioButtons(inputId = "majurokobe", label="Majuro or Kobe plot", selected = "Majuro", choiceNames = c("Majuro", "Kobe"), choiceValues = c("Majuro", "Kobe"))
       ),
       
