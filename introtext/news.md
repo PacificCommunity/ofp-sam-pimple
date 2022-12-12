@@ -1,5 +1,10 @@
 # News
 
+## December 2022
+
+* Added adopted HCR (MP) adopted by WCPFC19.
+* Only Adopted HCR is selected at the start.
+
 ## November 2022
 
 * Added robustness sets including hyperstability; low recruitment; and effort creep scenarios.

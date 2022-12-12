@@ -221,8 +221,8 @@ ui <- fluidPage(id="top",
           tags$h1("PIMPLE"),
           tags$p("Performance Indicators and Management Procedures expLorEr"),
           tags$footer(
-            tags$p("version 1.0.1 Tarantula Deadly Cargo"),
-            tags$p("Copyright 2021 OFP SPC MSE Team."),
+            tags$p("version 1.0.2 Tarantula Deadly Cargo"),
+            tags$p("Copyright 2022 OFP SPC MSE Team."),
             tags$p("Distributed under the GPL 3")
           )
       )), # End of about condition
@@ -256,13 +256,12 @@ ui <- fluidPage(id="top",
         checkboxInput("showspag", "Show trajectories", value=FALSE) 
       ),
       
-      
       # In Management Procedures tab, show the points and trajectories
       # Comment out these lines to not show the HCR points and trajectories
-      conditionalPanel(condition=("input.nvp == 'about'"),
+      conditionalPanel(condition=("input.nvp == 'about' && false"), # Don't show button or performance plots
+      #conditionalPanel(condition=("input.nvp == 'about'"),
         checkboxInput(inputId="showhcrperformance", label="Don't touch this button", value=FALSE)
       ),
-      # Change false to true to show secret performance options (can hide from users)
       conditionalPanel(condition="((input.nvp == 'mps') && (input.showhcrperformance == true))",
       #conditionalPanel(condition="((input.nvp == 'mps') && true)",
       #conditionalPanel(condition="((input.nvp == 'mps') && false)",
